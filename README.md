@@ -1,57 +1,120 @@
-# Sample Hardhat 3 Project (`node:test` and `viem`)
+# BloodPoints - 区块链献血积分系统
 
-This project showcases a Hardhat 3 project using the native Node.js test runner (`node:test`) and the `viem` library for Ethereum interactions.
+基于以太坊区块链的献血积分管理平台，让每一次献血都被永久记录，让爱心传递更有价值。
 
-To learn more about Hardhat 3, please visit the [Getting Started guide](https://hardhat.org/docs/getting-started#getting-started-with-hardhat-3). To share your feedback, join our [Hardhat 3](https://hardhat.org/hardhat3-telegram-group) Telegram group or [open an issue](https://github.com/NomicFoundation/hardhat/issues/new) in our GitHub issue tracker.
+## 项目简介
 
-## Project Overview
+BloodPoints 是一个去中心化的献血积分管理系统，利用区块链技术确保献血记录的透明性、不可篡改性和可追溯性。用户通过献血获得积分奖励，可用于兑换商品或转赠给他人。
 
-This example project includes:
+## 核心功能
 
-- A simple Hardhat configuration file.
-- Foundry-compatible Solidity unit tests.
-- TypeScript integration tests using [`node:test`](nodejs.org/api/test.html), the new Node.js native test runner, and [`viem`](https://viem.sh/).
-- Examples demonstrating how to connect to different types of networks, including locally simulating OP mainnet.
+| 功能 | 描述 | 状态 |
+|------|------|------|
+| 献血积分 | 每次献血获得 100 积分奖励 | 已完成 |
+| 积分转赠 | 将积分转赠给其他用户 | 已完成 |
+| 公益排行榜 | 查看献血积分排名 | 已完成 |
+| 商品兑换 | 使用积分兑换商品 | 待实现 |
 
-## Usage
+## 技术栈
 
-### Running Tests
+### 前端
+- React 19 + TypeScript
+- Vite 构建工具
+- wagmi + viem 以太坊交互库
+- RainbowKit 钱包连接组件
 
-To run all the tests in the project, execute the following command:
+### 智能合约
+- Solidity ^0.8.28
+- OpenZeppelin 安全库
+- Hardhat 开发框架
 
-```shell
+### 网络
+- 测试网: Sepolia
+- 合约地址: `0xd47bcc8ca39f6411506cd6daeee000d54af97503`
+
+## 快速开始
+
+### 环境要求
+- Node.js >= 18
+- npm 或 yarn
+- MetaMask 浏览器钱包
+
+### 安装依赖
+
+```bash
+# 安装根目录依赖
+npm install
+
+# 安装前端依赖
+cd frontend
+npm install
+```
+
+### 启动前端
+
+```bash
+cd frontend
+npm run dev
+```
+
+访问 http://localhost:5173 即可使用。
+
+### 运行测试
+
+```bash
 npx hardhat test
 ```
 
-You can also selectively run the Solidity or `node:test` tests:
+## 项目结构
 
-```shell
-npx hardhat test solidity
-npx hardhat test nodejs
+```
+├── contracts/           # Solidity 智能合约
+│   └── BloodPoints.sol  # 核心合约
+├── frontend/            # React 前端应用
+│   ├── src/
+│   │   ├── components/  # UI 组件
+│   │   ├── config/      # wagmi 配置
+│   │   └── contracts/   # 合约 ABI 和地址
+│   └── ...
+├── scripts/             # 部署脚本
+├── test/                # 测试文件
+└── hardhat.config.ts    # Hardhat 配置
 ```
 
-### Make a deployment to Sepolia
+## 智能合约 API
 
-This project includes an example Ignition module to deploy the contract. You can deploy this module to a locally simulated chain or to Sepolia.
+### 用户功能
+- `donateBlood()` - 献血获取积分
+- `transferPoints(to, amount)` - 转赠积分
+- `redeemProduct(productId)` - 兑换商品
 
-To run the deployment to a local chain:
+### 查询功能
+- `getPoints(user)` - 查询用户积分
+- `getLeaderboard()` - 获取排行榜
+- `getProduct(productId)` - 查询商品信息
+- `getDonorCount()` - 获取献血者总数
 
-```shell
-npx hardhat ignition deploy ignition/modules/Counter.ts
-```
+### 管理功能
+- `addNewProduct(name, price, stock)` - 上架新商品（仅管理员）
 
-To run the deployment to Sepolia, you need an account with funds to send the transaction. The provided Hardhat configuration includes a Configuration Variable called `SEPOLIA_PRIVATE_KEY`, which you can use to set the private key of the account you want to use.
+## 安全特性
 
-You can set the `SEPOLIA_PRIVATE_KEY` variable using the `hardhat-keystore` plugin or by setting it as an environment variable.
+- 使用 OpenZeppelin 的 `Ownable` 进行权限控制
+- 使用 `ReentrancyGuard` 防止重入攻击
+- 所有关键操作均有参数验证
 
-To set the `SEPOLIA_PRIVATE_KEY` config variable using `hardhat-keystore`:
+## 未来规划
 
-```shell
-npx hardhat keystore set SEPOLIA_PRIVATE_KEY
-```
+- [ ] 商品兑换前端界面
+- [ ] 积分历史记录查询
+- [ ] 多链支持
+- [ ] 移动端适配
+- [ ] NFT 献血证书
 
-After setting the variable, you can run the deployment with the Sepolia network:
+## 许可证
 
-```shell
-npx hardhat ignition deploy --network sepolia ignition/modules/Counter.ts
-```
+MIT License
+
+## 联系方式
+
+如有问题或建议，欢迎提交 Issue 或 Pull Request。
