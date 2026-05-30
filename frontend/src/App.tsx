@@ -81,7 +81,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>献血积分系统 &copy; 2024 | 基于区块链技术</p>
+        <p>献血积分系统 &copy; 2026 | 基于区块链技术</p>
       </footer>
     </div>
   );
