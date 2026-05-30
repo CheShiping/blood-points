@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(ls -la \"E:/Users/Shiping/the_second_term_of_sophomore/bolckchain/final-exam\")",
+      "Read(//e/Users/Shiping/the_second_term_of_sophomore/bolckchain/final-exam/**)",
+      "Bash(npx hardhat *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"const abi = require\\('./src/contracts/BloodPoints.json'\\); console.log\\('ABI valid, entries:', abi.length\\); const lb = abi.find\\(x => x.name === 'getLeaderboard'\\); console.log\\('getLeaderboard outputs:', JSON.stringify\\(lb.outputs\\)\\); const gp = abi.find\\(x => x.name === 'getProducts'\\); console.log\\('getProducts exists:', !!gp\\);\")",
+      "Bash(npx vite *)"
+    ]
+  }
+}
