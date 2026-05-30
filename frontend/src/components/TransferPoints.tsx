@@ -13,7 +13,7 @@ export default function TransferPoints() {
     hash,
   });
 
-  const handleTransfer = async (e) => {
+  const handleTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toAddress || !amount) return;
 

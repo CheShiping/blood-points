@@ -3,7 +3,14 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
 
 // Helper component to fetch a single product by ID
-function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, getProductIcon }) {
+function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, getProductIcon }: {
+  productId: number;
+  isConnected: boolean;
+  isPending: boolean;
+  userPoints: bigint | undefined;
+  onRedeem: (id: bigint) => void;
+  getProductIcon: (index: number) => string;
+}) {
   const { data: product } = useReadContract({
     abi: CONTRACT_ABI.abi,
     address: CONTRACT_ADDRESS,
@@ -11,12 +18,13 @@ function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, 
     args: [BigInt(productId)],
   });
 
-  if (!product || product[2] === 0n) return null; // price=0 means product doesn't exist
+  if (!product || (product as readonly [bigint, string, bigint, bigint])[2] === 0n) return null; // price=0 means product doesn't exist
 
-  const id = product[0];
-  const name = product[1];
-  const price = product[2];
-  const stock = product[3];
+  const productData = product as readonly [bigint, string, bigint, bigint];
+  const id = productData[0];
+  const name = productData[1];
+  const price = productData[2];
+  const stock = productData[3];
 
   return (
     <div className="product-card">
@@ -39,7 +47,7 @@ function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, 
       <button
         className="redeem-btn"
         onClick={() => onRedeem(id)}
-        disabled={!isConnected || isPending || stock === 0n || (userPoints && userPoints < price)}
+        disabled={!isConnected || isPending || stock === 0n || (!!userPoints && userPoints < price)}
       >
         {isPending ? (
           <><span className="btn-spinner"></span>兑换中...</>
@@ -81,7 +89,7 @@ export default function ProductRedemption() {
     hash,
   });
 
-  const handleRedeem = async (productId) => {
+  const handleRedeem = async (productId: bigint) => {
     try {
       await writeContract({
         abi: CONTRACT_ABI.abi,
@@ -100,7 +108,7 @@ export default function ProductRedemption() {
     refetchPoints();
   }
 
-  const getProductIcon = (index) => {
+  const getProductIcon = (index: number) => {
     const icons = ['🎁', '🛍️', '🎀', '⭐', '🎈', '🎯', '🎪', '🎭'];
     return icons[index % icons.length];
   };
@@ -110,9 +118,9 @@ export default function ProductRedemption() {
       <div className="card-header">
         <div className="card-icon">🛍️</div>
         <h2 className="card-title">商品兑换</h2>
-        {userPoints && (
+        {userPoints !== undefined && (
           <div className="wallet-status" style={{ marginLeft: 'auto', marginTop: 0 }}>
-            <span className="status-text">当前积分: {userPoints.toString()}</span>
+            <span className="status-text">当前积分: {(userPoints as bigint).toString()}</span>
           </div>
         )}
       </div>
@@ -130,7 +138,7 @@ export default function ProductRedemption() {
               productId={i}
               isConnected={isConnected}
               isPending={isPending}
-              userPoints={userPoints}
+              userPoints={userPoints as bigint | undefined}
               onRedeem={handleRedeem}
               getProductIcon={getProductIcon}
             />

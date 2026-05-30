@@ -8,7 +8,7 @@ import ProductRedemption from './components/ProductRedemption';
 function App() {
   const { address, isConnected } = useAccount();
 
-  const shortAddress = (addr) => {
+  const shortAddress = (addr: string | undefined) => {
     if (!addr) return '';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };

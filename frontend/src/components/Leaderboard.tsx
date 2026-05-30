@@ -12,24 +12,24 @@ export default function Leaderboard() {
   // getLeaderboard() returns (address[] donors, uint256[] points) as a tuple
   // wagmi decodes this as [address[], uint256[]]
   const leaderboard = leaderboardRaw
-    ? leaderboardRaw[0].map((user, i) => ({ user, points: leaderboardRaw[1][i] }))
+    ? (leaderboardRaw as [readonly string[], readonly bigint[]])[0].map((user: string, i: number) => ({ user, points: (leaderboardRaw as [readonly string[], readonly bigint[]])[1][i] }))
     : [];
 
-  const getRankIcon = (index) => {
+  const getRankIcon = (index: number) => {
     if (index === 0) return '🥇';
     if (index === 1) return '🥈';
     if (index === 2) return '🥉';
     return `${index + 1}`;
   };
 
-  const getRankClass = (index) => {
+  const getRankClass = (index: number) => {
     if (index === 0) return 'rank-gold';
     if (index === 1) return 'rank-silver';
     if (index === 2) return 'rank-bronze';
     return '';
   };
 
-  const shortAddress = (addr) => {
+  const shortAddress = (addr: string) => {
     if (!addr) return '';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
@@ -62,7 +62,7 @@ export default function Leaderboard() {
               </tr>
             </thead>
             <tbody>
-              {leaderboard.map((item, index) => (
+              {leaderboard.map((item: { user: string; points: bigint }, index: number) => (
                 <tr key={index} className={getRankClass(index)}>
                   <td className="rank-cell">
                     <span className="rank-icon">{getRankIcon(index)}</span>
