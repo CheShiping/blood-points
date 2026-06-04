@@ -1,10 +1,15 @@
-
+import { useState } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
+
+const BLOOD_TYPES = ['A', 'B', 'AB', 'O'] as const;
+const VOLUMES = [200, 300, 400] as const;
 
 export default function BloodDonation() {
   const { address, isConnected } = useAccount();
   const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const [bloodType, setBloodType] = useState<string>('A');
+  const [volume, setVolume] = useState<number>(300);
 
   const { data: points, refetch: refetchPoints } = useReadContract({
     abi: CONTRACT_ABI.abi,
@@ -26,6 +31,7 @@ export default function BloodDonation() {
         abi: CONTRACT_ABI.abi,
         address: CONTRACT_ADDRESS,
         functionName: 'donateBlood',
+        args: [bloodType, BigInt(volume)],
       });
     } catch (err) {
       console.error('Donation failed:', err);
@@ -50,6 +56,40 @@ export default function BloodDonation() {
           <div className="points-value">
             <span className="points-number">{points ? points.toString() : '0'}</span>
             <span className="points-unit">分</span>
+          </div>
+        </div>
+
+        <div className="donation-form">
+          <div className="form-row">
+            <label className="form-label">血型</label>
+            <div className="blood-type-selector">
+              {BLOOD_TYPES.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`type-btn ${bloodType === type ? 'active' : ''}`}
+                  onClick={() => setBloodType(type)}
+                >
+                  {type}型
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <label className="form-label">献血量 (ml)</label>
+            <div className="volume-selector">
+              {VOLUMES.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={`volume-btn ${volume === v ? 'active' : ''}`}
+                  onClick={() => setVolume(v)}
+                >
+                  {v}ml
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -81,7 +121,7 @@ export default function BloodDonation() {
         {donationReceipt.isSuccess && (
           <div className="tx-success">
             <span className="tx-icon">✅</span>
-            献血成功！已获得 100 积分
+            献血成功！已获得 100 积分，血液记录已上链
           </div>
         )}
       </div>
