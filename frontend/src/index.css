@@ -1079,3 +1079,469 @@ body {
   background: var(--red-200);
   color: var(--red-900);
 }
+
+/* ============================================
+   血液追踪样式
+   ============================================ */
+
+/* Navigation */
+.nav-links {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-link {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--red-600);
+  background: var(--red-50);
+}
+
+.nav-link.active {
+  color: var(--red-600);
+  background: var(--red-50);
+  font-weight: 600;
+}
+
+/* Section header */
+.blood-tracking-section {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.section-desc {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0;
+  flex: 1;
+}
+
+.refresh-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--red-200);
+  color: var(--red-600);
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: var(--red-50);
+  border-color: var(--red-300);
+}
+
+/* Blood cards */
+.blood-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.blood-card {
+  background: var(--bg-card);
+  border: 1px solid var(--red-100);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.blood-card:hover {
+  border-color: var(--red-300);
+  box-shadow: var(--shadow-md);
+}
+
+.blood-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.blood-card-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.blood-id {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.blood-type {
+  background: var(--red-50);
+  color: var(--red-700);
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.blood-volume {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* Status badges */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-donated {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.status-received {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.status-tested {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.status-assigned {
+  background: var(--red-100);
+  color: var(--red-800);
+}
+
+/* Timeline */
+.blood-timeline {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--red-100);
+}
+
+.timeline-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.timeline-nodes {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.timeline-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.timeline-node .node-connector {
+  color: var(--red-300);
+  font-size: 20px;
+  margin: 0 4px;
+}
+
+.timeline-node .node-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--red-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  border: 2px solid var(--red-200);
+}
+
+.timeline-node.active .node-icon {
+  background: var(--red-100);
+  border-color: var(--red-400);
+}
+
+.timeline-node.current .node-icon {
+  background: var(--red-500);
+  border-color: var(--red-600);
+  animation: pulse 2s infinite;
+}
+
+.node-content {
+  min-width: 100px;
+}
+
+.node-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.node-value {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.node-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.empty-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Simulation panel */
+.simulation-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--red-100);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.sim-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.sim-desc {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 0 0 20px 0;
+}
+
+.sim-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.form-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--red-200);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  border-color: var(--red-400);
+}
+
+.form-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.blood-type-selector,
+.volume-selector {
+  display: flex;
+  gap: 8px;
+}
+
+.type-btn,
+.volume-btn {
+  background: var(--bg-primary);
+  border: 1px solid var(--red-200);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.type-btn:hover,
+.volume-btn:hover {
+  border-color: var(--red-400);
+  background: var(--red-50);
+}
+
+.type-btn.active,
+.volume-btn.active {
+  background: var(--red-600);
+  color: white;
+  border-color: var(--red-600);
+}
+
+.type-btn:disabled,
+.volume-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Simulation progress */
+.sim-progress {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.sim-progress::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  right: 40px;
+  height: 2px;
+  background: var(--red-100);
+}
+
+.progress-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+.step-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 2px solid var(--red-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: all 0.3s;
+}
+
+.progress-step.done .step-number {
+  background: var(--red-600);
+  border-color: var(--red-600);
+  color: white;
+}
+
+.progress-step.active .step-number {
+  background: var(--bg-card);
+  border-color: var(--red-600);
+  color: var(--red-600);
+  animation: pulse 2s infinite;
+}
+
+.step-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.progress-step.done .step-label {
+  color: var(--red-600);
+  font-weight: 600;
+}
+
+.progress-step.active .step-label {
+  color: var(--red-600);
+  font-weight: 600;
+}
+
+.sim-btn {
+  width: 100%;
+  background: var(--gradient-blood);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-red);
+}
+
+.sim-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-red-lg);
+}
+
+.sim-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Donation form (updated BloodDonation) */
+.donation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 16px;
+}
