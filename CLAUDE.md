@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BloodPoints (热血链) is a blockchain-based blood donation points DApp on Sepolia testnet. Users connect a wallet, "donate blood" to earn 100 on-chain points per donation, view a leaderboard, transfer points, and redeem points for products. Deployed contract: `0xd47bcc8ca39f6411506cd6daeee000d54af97503`.
+BloodPoints (热血链) is a blockchain-based blood donation points DApp on Sepolia testnet. Users connect a wallet, "donate blood" to earn 100 on-chain points per donation, view a leaderboard, transfer points, redeem products, and track blood donation journeys. Deployed contract: `0x6324420a9a5b43f467813a09889594151df9f020`.
 
 ## Commands
 
@@ -37,9 +37,10 @@ Inherits `Ownable` + `ReentrancyGuard` (OpenZeppelin). Owner-only `addNewProduct
 
 Key state: `userPoints` mapping, `products` mapping, `allDonors` array, `isDonor` mapping, `nextProductId` counter.
 
-Core functions: `donateBlood()` (100 pts), `transferPoints(to, amount)`, `redeemProduct(productId)`, `getLeaderboard()` (bubble sort — gas-inefficient at scale), `getPoints(user)`, `getProduct(id)`, `getDonorCount()`.
+Core functions: `donateBlood(bloodType, volume)` (100 pts), `transferPoints(to, amount)`, `redeemProduct(productId)`, `getLeaderboard()` (bubble sort — gas-inefficient at scale), `getPoints(user)`, `getProduct(id)`, `getDonorCount()`.
+Blood tracking: `receiveBlood(id, bank)`, `testBlood(id, passed)`, `assignToPatient(id, patient)` (all onlyOwner), `getBloodUnit(id)`, `getBloodTransfers(id)`, `getDonorBloods(donor)`, `getPatientBloods(patient)`, `getBloodJourney(id)`.
 
-Events: `PointsAwarded`, `ProductRedeemed`, `PointsTransferred`.
+Events: `PointsAwarded`, `ProductRedeemed`, `PointsTransferred`, `BloodCreated`, `BloodReceived`, `BloodTested`, `BloodAssigned`.
 
 ### Frontend Provider Chain
 `main.tsx`: `WagmiProvider` → `QueryClientProvider` → `RainbowKitProvider` (red accent) → `App`
@@ -56,6 +57,7 @@ Events: `PointsAwarded`, `ProductRedeemed`, `PointsTransferred`.
 | `Leaderboard.tsx` | `getLeaderboard()` → decode `(address[], uint256[])` tuple |
 | `TransferPoints.tsx` | `transferPoints(address, uint256)` |
 | `ProductRedemption.tsx` | Iterates `getProduct(0..N)`, calls `redeemProduct(id)` |
+| `BloodTracking.tsx` | Blood journey cards, timeline visualization, one-click simulation panel |
 
 ### Styling
 All styles in `src/index.css` (~1082 lines, CSS custom properties, animations). `App.css` is unused Vite template leftover.
@@ -63,8 +65,18 @@ All styles in `src/index.css` (~1082 lines, CSS custom properties, animations). 
 ## Hardhat 3 Notes
 This project uses **Hardhat 3** (`defineConfig` API, not legacy `module.exports`). The `hardhat-toolbox-viem` plugin provides viem-based test helpers. Solidity tests use `forge-std`. Two config profiles: `default` (no optimizer) and `production` (optimizer, 200 runs).
 
+## Sepolia Deployment Gotchas
+- All frontend `writeContract` calls need `gas: 300000n` — Sepolia rejects default estimated gas limits.
+- Behind a proxy? Set `HTTP_PROXY`/`HTTPS_PROXY` env vars before deploying: `$env:HTTPS_PROXY="http://127.0.0.1:7890"`.
+- After redeploying, update `frontend/src/contracts/config.ts` with the new address AND run `export-abi.ts`.
+
+## Testing Notes
+- BloodPoints constructor requires `address initialOwner` (OpenZeppelin v5): `viem.deployContract("BloodPoints", [owner.account.address])`.
+- Solidity returns lowercase addresses; viem returns EIP-55 checksummed. Use `.toLowerCase()` on both sides when comparing.
+- `getProduct()` returns a named tuple decoded as an array by viem — destructure: `const [name, price, , stock] = product`.
+
 ## Known Issues
-- **No BloodPoints tests** — only the boilerplate `Counter` contract has tests (`test/Counter.ts`, `contracts/Counter.t.sol`).
+- **31 contract tests** in `test/BloodPoints.ts` covering points, blood tracking, state machine, access control, and products.
 - **ABI mismatch risk** — after contract redeployment, run `npx hardhat run scripts/export-abi.ts` from root to regenerate `frontend/src/contracts/BloodPoints.json`.
 - **Hardcoded Alchemy key** in `frontend/src/config/wagmi.ts` — should use `import.meta.env`.
 - **No frontend test framework** configured.
