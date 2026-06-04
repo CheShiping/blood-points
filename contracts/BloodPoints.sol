@@ -141,6 +141,73 @@ contract BloodPoints is Ownable, ReentrancyGuard {
     emit BloodCreated(bloodId, msg.sender, bloodType, volume);
   }
 
+  // ==================== 血液流转功能 ====================
+
+  /// @notice 血站接收血液
+  /// @param bloodId 血液ID
+  /// @param bloodBank 血站名称
+  function receiveBlood(uint256 bloodId, string calldata bloodBank) external onlyOwner {
+    BloodUnit storage unit = bloodUnits[bloodId];
+    require(unit.bloodId == bloodId, "Blood unit does not exist");
+    require(
+      unit.status == BloodStatus.Donated || unit.status == BloodStatus.Received,
+      "Blood cannot be received in current status"
+    );
+    require(bytes(bloodBank).length > 0, "Blood bank name cannot be empty");
+
+    // 如果是从 Received 转出，更新上一条记录的 transferredAt
+    if (unit.status == BloodStatus.Received && bloodTransfers[bloodId].length > 0) {
+      bloodTransfers[bloodId][bloodTransfers[bloodId].length - 1].transferredAt = block.timestamp;
+    }
+
+    unit.status = BloodStatus.Received;
+    bloodTransfers[bloodId].push(BloodTransfer({
+      bloodBank: bloodBank,
+      receivedAt: block.timestamp,
+      transferredAt: 0
+    }));
+
+    emit BloodReceived(bloodId, bloodBank, block.timestamp);
+  }
+
+  /// @notice 血站检测血液
+  /// @param bloodId 血液ID
+  /// @param passed 检测是否合格
+  function testBlood(uint256 bloodId, bool passed) external onlyOwner {
+    BloodUnit storage unit = bloodUnits[bloodId];
+    require(unit.bloodId == bloodId, "Blood unit does not exist");
+    require(unit.status == BloodStatus.Received, "Blood must be received before testing");
+
+    unit.status = BloodStatus.Tested;
+    unit.testedPassed = passed;
+    unit.testedAt = block.timestamp;
+
+    // 更新当前血站的 transferredAt
+    if (bloodTransfers[bloodId].length > 0) {
+      bloodTransfers[bloodId][bloodTransfers[bloodId].length - 1].transferredAt = block.timestamp;
+    }
+
+    emit BloodTested(bloodId, passed, block.timestamp);
+  }
+
+  /// @notice 分配血液给病人
+  /// @param bloodId 血液ID
+  /// @param patientAddress 病人地址
+  function assignToPatient(uint256 bloodId, address patientAddress) external onlyOwner {
+    BloodUnit storage unit = bloodUnits[bloodId];
+    require(unit.bloodId == bloodId, "Blood unit does not exist");
+    require(unit.status == BloodStatus.Tested, "Blood must be tested before assignment");
+    require(unit.testedPassed, "Blood test must pass before assignment");
+    require(patientAddress != address(0), "Invalid patient address");
+
+    unit.status = BloodStatus.Assigned;
+    unit.patient = patientAddress;
+    unit.assignedAt = block.timestamp;
+    patientBloodIds[patientAddress].push(bloodId);
+
+    emit BloodAssigned(bloodId, patientAddress, block.timestamp);
+  }
+
   // ==================== 积分转赠功能 ====================
 
   /// @notice 用户间积分转赠
