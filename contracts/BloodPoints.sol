@@ -15,6 +15,30 @@ contract BloodPoints is Ownable, ReentrancyGuard {
     uint256 stock;
   }
 
+  /// @notice 血液状态枚举
+  enum BloodStatus { Donated, Received, Tested, Assigned }
+
+  /// @notice 血液单元结构体
+  struct BloodUnit {
+    uint256 bloodId;
+    address donor;
+    uint256 volume;
+    string bloodType;
+    bool testedPassed;
+    address patient;
+    BloodStatus status;
+    uint256 donatedAt;
+    uint256 testedAt;
+    uint256 assignedAt;
+  }
+
+  /// @notice 血站流转记录
+  struct BloodTransfer {
+    string bloodBank;
+    uint256 receivedAt;
+    uint256 transferredAt;
+  }
+
   // ==================== 状态变量 ====================
 
   /// @notice 用户积分映射
@@ -35,6 +59,21 @@ contract BloodPoints is Ownable, ReentrancyGuard {
   /// @notice 每次献血获得的积分
   uint256 public constant POINTS_PER_DONATION = 100;
 
+  /// @notice 血液ID到血液单元的映射
+  mapping(uint256 => BloodUnit) public bloodUnits;
+
+  /// @notice 血液ID到血站流转记录的映射
+  mapping(uint256 => BloodTransfer[]) public bloodTransfers;
+
+  /// @notice 献血者地址到血液ID列表的映射
+  mapping(address => uint256[]) public donorBloodIds;
+
+  /// @notice 病人地址到收到的血液ID列表的映射
+  mapping(address => uint256[]) public patientBloodIds;
+
+  /// @notice 下一个血液ID
+  uint256 public nextBloodId;
+
   // ==================== 事件 ====================
 
   /// @notice 积分发放事件
@@ -46,6 +85,18 @@ contract BloodPoints is Ownable, ReentrancyGuard {
   /// @notice 积分转赠事件
   event PointsTransferred(address indexed from, address indexed to, uint256 amount);
 
+  /// @notice 血液创建事件
+  event BloodCreated(uint256 indexed bloodId, address indexed donor, string bloodType, uint256 volume);
+
+  /// @notice 血站接收事件
+  event BloodReceived(uint256 indexed bloodId, string bloodBank, uint256 timestamp);
+
+  /// @notice 血液检测事件
+  event BloodTested(uint256 indexed bloodId, bool passed, uint256 timestamp);
+
+  /// @notice 血液分配事件
+  event BloodAssigned(uint256 indexed bloodId, address indexed patient, uint256 timestamp);
+
   // ==================== 构造函数 ====================
 
   /// @notice 构造函数，设置合约拥有者
@@ -55,8 +106,12 @@ contract BloodPoints is Ownable, ReentrancyGuard {
   // ==================== 献血积分功能 ====================
 
   /// @notice 用户献血获取积分
-  /// @dev 调用者每次献血获得 100 积分，首次献血会记录到排行榜
-  function donateBlood() external nonReentrant {
+  /// @param bloodType 血型 (A/B/AB/O)
+  /// @param volume 献血量(ml)
+  function donateBlood(string calldata bloodType, uint256 volume) external nonReentrant {
+    require(bytes(bloodType).length > 0, "Blood type cannot be empty");
+    require(volume > 0, "Volume must be greater than 0");
+
     // 发放积分
     userPoints[msg.sender] += POINTS_PER_DONATION;
 
@@ -66,7 +121,24 @@ contract BloodPoints is Ownable, ReentrancyGuard {
       allDonors.push(msg.sender);
     }
 
+    // 创建血液追踪记录
+    uint256 bloodId = nextBloodId++;
+    bloodUnits[bloodId] = BloodUnit({
+      bloodId: bloodId,
+      donor: msg.sender,
+      volume: volume,
+      bloodType: bloodType,
+      testedPassed: false,
+      patient: address(0),
+      status: BloodStatus.Donated,
+      donatedAt: block.timestamp,
+      testedAt: 0,
+      assignedAt: 0
+    });
+    donorBloodIds[msg.sender].push(bloodId);
+
     emit PointsAwarded(msg.sender, POINTS_PER_DONATION);
+    emit BloodCreated(bloodId, msg.sender, bloodType, volume);
   }
 
   // ==================== 积分转赠功能 ====================
