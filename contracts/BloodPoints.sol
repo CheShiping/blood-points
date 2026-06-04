@@ -208,6 +208,51 @@ contract BloodPoints is Ownable, ReentrancyGuard {
     emit BloodAssigned(bloodId, patientAddress, block.timestamp);
   }
 
+  // ==================== 血液查询功能 ====================
+
+  /// @notice 查询血液单元详情
+  /// @param bloodId 血液ID
+  /// @return 血液单元完整信息
+  function getBloodUnit(uint256 bloodId) external view returns (BloodUnit memory) {
+    require(bloodUnits[bloodId].bloodId == bloodId, "Blood unit does not exist");
+    return bloodUnits[bloodId];
+  }
+
+  /// @notice 查询血液的血站流转记录
+  /// @param bloodId 血液ID
+  /// @return 血站流转记录数组
+  function getBloodTransfers(uint256 bloodId) external view returns (BloodTransfer[] memory) {
+    require(bloodUnits[bloodId].bloodId == bloodId, "Blood unit does not exist");
+    return bloodTransfers[bloodId];
+  }
+
+  /// @notice 查询献血者的所有血液ID
+  /// @param donor 献血者地址
+  /// @return 血液ID数组
+  function getDonorBloods(address donor) external view returns (uint256[] memory) {
+    return donorBloodIds[donor];
+  }
+
+  /// @notice 查询病人收到的所有血液ID
+  /// @param patient 病人地址
+  /// @return 血液ID数组
+  function getPatientBloods(address patient) external view returns (uint256[] memory) {
+    return patientBloodIds[patient];
+  }
+
+  /// @notice 一站式查询血液完整流转信息
+  /// @param bloodId 血液ID
+  /// @return unit 血液单元信息
+  /// @return transfers 血站流转记录
+  function getBloodJourney(uint256 bloodId)
+    external
+    view
+    returns (BloodUnit memory unit, BloodTransfer[] memory transfers)
+  {
+    require(bloodUnits[bloodId].bloodId == bloodId, "Blood unit does not exist");
+    return (bloodUnits[bloodId], bloodTransfers[bloodId]);
+  }
+
   // ==================== 积分转赠功能 ====================
 
   /// @notice 用户间积分转赠
