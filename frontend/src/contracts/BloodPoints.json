@@ -42,6 +42,112 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "BloodAssigned",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "donor",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "bloodType",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "volume",
+        "type": "uint256"
+      }
+    ],
+    "name": "BloodCreated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "bloodBank",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "BloodReceived",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "passed",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "BloodTested",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
         "internalType": "address",
         "name": "previousOwner",
         "type": "address"
@@ -175,10 +281,380 @@
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "patientAddress",
+        "type": "address"
+      }
+    ],
+    "name": "assignToPatient",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "bloodTransfers",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "bloodBank",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "receivedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "transferredAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "bloodUnits",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "donor",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "volume",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "bloodType",
+        "type": "string"
+      },
+      {
+        "internalType": "bool",
+        "name": "testedPassed",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      },
+      {
+        "internalType": "enum BloodPoints.BloodStatus",
+        "name": "status",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "donatedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "testedAt",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "assignedAt",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "bloodType",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "volume",
+        "type": "uint256"
+      }
+    ],
     "name": "donateBlood",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "donorBloodIds",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getBloodJourney",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "bloodId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "donor",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "volume",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "bloodType",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "testedPassed",
+            "type": "bool"
+          },
+          {
+            "internalType": "address",
+            "name": "patient",
+            "type": "address"
+          },
+          {
+            "internalType": "enum BloodPoints.BloodStatus",
+            "name": "status",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "donatedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "testedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "assignedAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BloodPoints.BloodUnit",
+        "name": "unit",
+        "type": "tuple"
+      },
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "bloodBank",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "receivedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "transferredAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BloodPoints.BloodTransfer[]",
+        "name": "transfers",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getBloodTransfers",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "bloodBank",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "receivedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "transferredAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BloodPoints.BloodTransfer[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getBloodUnit",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "bloodId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "donor",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "volume",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "bloodType",
+            "type": "string"
+          },
+          {
+            "internalType": "bool",
+            "name": "testedPassed",
+            "type": "bool"
+          },
+          {
+            "internalType": "address",
+            "name": "patient",
+            "type": "address"
+          },
+          {
+            "internalType": "enum BloodPoints.BloodStatus",
+            "name": "status",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint256",
+            "name": "donatedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "testedAt",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "assignedAt",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct BloodPoints.BloodUnit",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "donor",
+        "type": "address"
+      }
+    ],
+    "name": "getDonorBloods",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -206,6 +682,25 @@
       {
         "internalType": "uint256[]",
         "name": "points",
+        "type": "uint256[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "patient",
+        "type": "address"
+      }
+    ],
+    "name": "getPatientBloods",
+    "outputs": [
+      {
+        "internalType": "uint256[]",
+        "name": "",
         "type": "uint256[]"
       }
     ],
@@ -286,6 +781,19 @@
   },
   {
     "inputs": [],
+    "name": "nextBloodId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "nextProductId",
     "outputs": [
       {
@@ -305,6 +813,30 @@
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "patientBloodIds",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -348,6 +880,24 @@
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "bloodBank",
+        "type": "string"
+      }
+    ],
+    "name": "receiveBlood",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "productId",
         "type": "uint256"
       }
@@ -360,6 +910,24 @@
   {
     "inputs": [],
     "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "bloodId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "passed",
+        "type": "bool"
+      }
+    ],
+    "name": "testBlood",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
