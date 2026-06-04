@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { useAccount } from 'wagmi';
 import WalletConnect from './components/WalletConnect';
 import BloodDonation from './components/BloodDonation';
 import Leaderboard from './components/Leaderboard';
 import TransferPoints from './components/TransferPoints';
 import ProductRedemption from './components/ProductRedemption';
+import BloodTracking from './components/BloodTracking';
 
 function App() {
   const { address, isConnected } = useAccount();
+  const [activeSection, setActiveSection] = useState('home');
 
   const shortAddress = (addr: string | undefined) => {
     if (!addr) return '';
@@ -15,7 +18,7 @@ function App() {
 
   return (
     <div className="app">
-      <WalletConnect />
+      <WalletConnect activeSection={activeSection} onNavigate={setActiveSection} />
 
       <header className="app-header">
         <h1>献血积分系统</h1>
@@ -30,23 +33,27 @@ function App() {
 
       <main className="app-main">
         {isConnected ? (
-          <>
-            <section className="blood-donation-card">
-              <BloodDonation />
-            </section>
+          activeSection === 'tracking' ? (
+            <BloodTracking />
+          ) : (
+            <>
+              <section className="blood-donation-card">
+                <BloodDonation />
+              </section>
 
-            <section className="leaderboard-card">
-              <Leaderboard />
-            </section>
+              <section className="leaderboard-card">
+                <Leaderboard />
+              </section>
 
-            <section className="transfer-card">
-              <TransferPoints />
-            </section>
+              <section className="transfer-card">
+                <TransferPoints />
+              </section>
 
-            <section className="product-redemption-card">
-              <ProductRedemption />
-            </section>
-          </>
+              <section className="product-redemption-card">
+                <ProductRedemption />
+              </section>
+            </>
+          )
         ) : (
           <section className="welcome-section">
             <div className="welcome-content">
@@ -73,6 +80,11 @@ function App() {
                   <div className="feature-icon">🏆</div>
                   <h3>排行榜</h3>
                   <p>查看积分排行榜</p>
+                </div>
+                <div className="feature-card">
+                  <div className="feature-icon">🩸</div>
+                  <h3>血液追踪</h3>
+                  <p>追踪血液从献血到病人的完整流转</p>
                 </div>
               </div>
             </div>
