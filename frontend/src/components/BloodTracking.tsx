@@ -158,6 +158,7 @@ function SimulationPanel() {
         address: CONTRACT_ADDRESS,
         functionName: 'donateBlood',
         args: [bloodType, BigInt(volume)],
+        gas: 300000n,
       });
     } catch (err) {
       console.error('Simulation failed:', err);
@@ -181,6 +182,7 @@ function SimulationPanel() {
           address: CONTRACT_ADDRESS,
           functionName: 'receiveBlood',
           args: [0n, banks[0] || '血站A'],
+          gas: 300000n,
         });
       } catch (err) {
         console.error('Receive failed:', err);
@@ -197,6 +199,7 @@ function SimulationPanel() {
             address: CONTRACT_ADDRESS,
             functionName: 'receiveBlood',
             args: [currentBloodId, banks[nextIdx]],
+            gas: 300000n,
           });
         } catch (err) {
           console.error('Receive failed:', err);
@@ -211,6 +214,7 @@ function SimulationPanel() {
             address: CONTRACT_ADDRESS,
             functionName: 'testBlood',
             args: [currentBloodId, true],
+            gas: 300000n,
           });
         } catch (err) {
           console.error('Test failed:', err);
@@ -226,6 +230,7 @@ function SimulationPanel() {
           address: CONTRACT_ADDRESS,
           functionName: 'assignToPatient',
           args: [currentBloodId, patientAddr as `0x${string}`],
+          gas: 300000n,
         });
       } catch (err) {
         console.error('Assign failed:', err);

@@ -32,6 +32,7 @@ export default function BloodDonation() {
         address: CONTRACT_ADDRESS,
         functionName: 'donateBlood',
         args: [bloodType, BigInt(volume)],
+        gas: 300000n,
       });
     } catch (err) {
       console.error('Donation failed:', err);
