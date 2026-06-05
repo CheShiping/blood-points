@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BloodPoints (热血链) is a blockchain-based blood donation points DApp on Sepolia testnet. Users connect a wallet, "donate blood" to earn 100 on-chain points per donation, view a leaderboard, transfer points, redeem products, and track blood donation journeys. Deployed contract: `0x6324420a9a5b43f467813a09889594151df9f020`.
+BloodPoints (热血链) is a blockchain-based blood donation points DApp on Sepolia testnet. Users connect a wallet, "donate blood" to earn 100 on-chain points per donation, view a leaderboard, transfer points, redeem products, and track blood donation journeys. Deployed contract: `0x762a3de172619d3f7879d033966d31081a426aa2`.
 
 ## Commands
 
