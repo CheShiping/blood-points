@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useAccount } from 'wagmi';
 import WalletConnect from './components/WalletConnect';
-import BloodDonation from './components/BloodDonation';
-import Leaderboard from './components/Leaderboard';
-import TransferPoints from './components/TransferPoints';
-import ProductRedemption from './components/ProductRedemption';
-import BloodTracking from './components/BloodTracking';
+import DonorPanel from './components/DonorPanel';
+import CollectorPanel from './components/CollectorPanel';
+import BloodBankPanel from './components/BloodBankPanel';
 
 function App() {
   const { address, isConnected } = useAccount();
@@ -14,6 +12,49 @@ function App() {
   const shortAddress = (addr: string | undefined) => {
     if (!addr) return '';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  };
+
+  const renderRolePanel = () => {
+    switch (activeSection) {
+      case 'donor':
+        return <DonorPanel />;
+      case 'collector':
+        return <CollectorPanel />;
+      case 'bloodbank':
+        return <BloodBankPanel />;
+      default:
+        return (
+          <section className="welcome-section">
+            <div className="welcome-content">
+              <div className="welcome-icon">🩸</div>
+              <h2>欢迎使用献血积分系统</h2>
+              <p>连接钱包后，请从顶部导航栏选择您的角色</p>
+              <div className="features-grid">
+                <div className="feature-card" onClick={() => setActiveSection('donor')} style={{ cursor: 'pointer' }}>
+                  <div className="feature-icon">💉</div>
+                  <h3>献血人员</h3>
+                  <p>献血获取积分、查看血液流转、兑换奖品</p>
+                </div>
+                <div className="feature-card" onClick={() => setActiveSection('collector')} style={{ cursor: 'pointer' }}>
+                  <div className="feature-icon">📝</div>
+                  <h3>采集记录员</h3>
+                  <p>录入献血信息，上传血液记录到链上</p>
+                </div>
+                <div className="feature-card" onClick={() => setActiveSection('bloodbank')} style={{ cursor: 'pointer' }}>
+                  <div className="feature-icon">🏥</div>
+                  <h3>血站工作人员</h3>
+                  <p>接收、检测血液，分配给病人</p>
+                </div>
+                <div className="feature-card">
+                  <div className="feature-icon">🏆</div>
+                  <h3>排行榜</h3>
+                  <p>查看积分排行榜</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+    }
   };
 
   return (
@@ -33,27 +74,7 @@ function App() {
 
       <main className="app-main">
         {isConnected ? (
-          activeSection === 'tracking' ? (
-            <BloodTracking />
-          ) : (
-            <>
-              <section className="blood-donation-card">
-                <BloodDonation />
-              </section>
-
-              <section className="leaderboard-card">
-                <Leaderboard />
-              </section>
-
-              <section className="transfer-card">
-                <TransferPoints />
-              </section>
-
-              <section className="product-redemption-card">
-                <ProductRedemption />
-              </section>
-            </>
-          )
+          renderRolePanel()
         ) : (
           <section className="welcome-section">
             <div className="welcome-content">
@@ -77,12 +98,7 @@ function App() {
                   <p>使用积分兑换商品</p>
                 </div>
                 <div className="feature-card">
-                  <div className="feature-icon">🏆</div>
-                  <h3>排行榜</h3>
-                  <p>查看积分排行榜</p>
-                </div>
-                <div className="feature-card">
-                  <div className="feature-icon">🩸</div>
+                  <div className="feature-icon">🏥</div>
                   <h3>血液追踪</h3>
                   <p>追踪血液从献血到病人的完整流转</p>
                 </div>

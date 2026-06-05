@@ -77,9 +77,9 @@ body {
 }
 
 #root {
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
 }
 
 /* ============================================
@@ -143,7 +143,7 @@ body {
 .app {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.25rem;
   min-height: 100vh;
 }
 
@@ -155,20 +155,24 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1.25rem;
   background: var(--gradient-blood);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-red);
   animation: fadeInUp 0.6s ease-out;
   position: sticky;
-  top: 1rem;
+  top: 0.5rem;
   z-index: 100;
   backdrop-filter: blur(10px);
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .nav-header {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .nav-logo {
@@ -219,7 +223,7 @@ body {
 
 .app-header {
   text-align: center;
-  padding: 3rem 2rem;
+  padding: 1.5rem 2rem;
   background: var(--bg-card);
   border-radius: var(--radius-xl);
   border: 2px solid var(--red-100);
@@ -1087,29 +1091,31 @@ body {
 /* Navigation */
 .nav-links {
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .nav-link {
   background: none;
   border: none;
-  color: var(--text-secondary);
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
   font-weight: 500;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
-  color: var(--red-600);
-  background: var(--red-50);
+  color: white;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .nav-link.active {
-  color: var(--red-600);
-  background: var(--red-50);
+  color: white;
+  background: rgba(255, 255, 255, 0.25);
   font-weight: 600;
 }
 
@@ -1544,4 +1550,170 @@ body {
   flex-direction: column;
   gap: 14px;
   margin-bottom: 16px;
+}
+
+/* ============================================
+   导航栏角色切换样式
+   ============================================ */
+
+.nav-icon {
+  margin-right: 4px;
+}
+
+/* ============================================
+   血站工作人员面板样式
+   ============================================ */
+
+.bloodbank-panel {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.bloodbank-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .bloodbank-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bloodbank-card {
+  background: var(--bg-card);
+  border: 1px solid var(--red-100);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.bloodbank-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-subtitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* ============================================
+   采集记录员面板样式
+   ============================================ */
+
+.collector-panel {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--red-100);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   血液查询结果样式
+   ============================================ */
+
+.blood-query-results {
+  margin-top: 16px;
+}
+
+.result-count {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.blood-id-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blood-donor {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ============================================
+   献血人员面板样式
+   ============================================ */
+
+.donor-panel {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.donor-panel > section {
+  margin-bottom: 24px;
+}
+
+/* ============================================
+   血站 - 全局血液列表 & 选中
+   ============================================ */
+
+.all-blood-list {
+  margin-bottom: 20px;
+}
+
+.blood-card.clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.blood-card.clickable:hover {
+  border-color: var(--red-400);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.blood-card-warning {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #92400E;
+  background: #FEF3C7;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.selected-blood-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: var(--red-50);
+  border: 1px solid var(--red-200);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.selected-blood-hint strong {
+  color: var(--red-700);
+}
+
+.clear-btn {
+  background: none;
+  border: 1px solid var(--red-300);
+  color: var(--red-600);
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.2s;
+}
+
+.clear-btn:hover {
+  background: var(--red-100);
 }

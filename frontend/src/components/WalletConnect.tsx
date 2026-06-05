@@ -6,6 +6,13 @@ interface WalletConnectProps {
 }
 
 export default function WalletConnect({ activeSection, onNavigate }: WalletConnectProps) {
+  const navItems = [
+    { key: 'home', label: '首页', icon: '🏠' },
+    { key: 'donor', label: '献血人员', icon: '💉' },
+    { key: 'collector', label: '采集记录员', icon: '📝' },
+    { key: 'bloodbank', label: '血站工作人员', icon: '🏥' },
+  ];
+
   return (
     <div className="wallet-connect">
       <div className="nav-header">
@@ -14,18 +21,16 @@ export default function WalletConnect({ activeSection, onNavigate }: WalletConne
           <span className="logo-text">BloodPoints</span>
         </div>
         <nav className="nav-links">
-          <button
-            className={`nav-link ${activeSection === 'home' ? 'active' : ''}`}
-            onClick={() => onNavigate('home')}
-          >
-            首页
-          </button>
-          <button
-            className={`nav-link ${activeSection === 'tracking' ? 'active' : ''}`}
-            onClick={() => onNavigate('tracking')}
-          >
-            血液追踪
-          </button>
+          {navItems.map((item) => (
+            <button
+              key={item.key}
+              className={`nav-link ${activeSection === item.key ? 'active' : ''}`}
+              onClick={() => onNavigate(item.key)}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
         </nav>
       </div>
       <div className="connect-wrapper">

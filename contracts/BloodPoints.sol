@@ -18,6 +18,9 @@ contract BloodPoints is Ownable, ReentrancyGuard {
   /// @notice 血液状态枚举
   enum BloodStatus { Donated, Received, Tested, Assigned }
 
+  /// @notice 角色枚举
+  enum Role { None, Collector, BloodBank }
+
   /// @notice 血液单元结构体
   struct BloodUnit {
     uint256 bloodId;
@@ -74,6 +77,15 @@ contract BloodPoints is Ownable, ReentrancyGuard {
   /// @notice 下一个血液ID
   uint256 public nextBloodId;
 
+  /// @notice 地址到角色的映射
+  mapping(address => Role) public roles;
+
+  /// @notice 血型到血液ID列表的映射
+  mapping(string => uint256[]) internal _bloodIdsByType;
+
+  /// @notice 所有血液ID列表
+  uint256[] internal _allBloodIds;
+
   // ==================== 事件 ====================
 
   /// @notice 积分发放事件
@@ -97,11 +109,41 @@ contract BloodPoints is Ownable, ReentrancyGuard {
   /// @notice 血液分配事件
   event BloodAssigned(uint256 indexed bloodId, address indexed patient, uint256 timestamp);
 
+  /// @notice 角色分配事件
+  event RoleAssigned(address indexed account, Role role);
+
+  // ==================== Modifier ====================
+
+  /// @notice 角色权限检查
+  modifier onlyRole(Role required) {
+    require(roles[msg.sender] == required, "Caller does not have required role");
+    _;
+  }
+
   // ==================== 构造函数 ====================
 
   /// @notice 构造函数，设置合约拥有者
   /// @param initialOwner 初始管理员地址
   constructor(address initialOwner) Ownable(initialOwner) {}
+
+  // ==================== 角色管理功能 ====================
+
+  /// @notice 管理员分配角色
+  /// @param account 要分配角色的地址
+  /// @param role 角色类型
+  function assignRole(address account, Role role) external onlyOwner {
+    require(account != address(0), "Invalid account address");
+    roles[account] = role;
+    emit RoleAssigned(account, role);
+  }
+
+  /// @notice 管理员撤销角色
+  /// @param account 要撤销角色的地址
+  function revokeRole(address account) external onlyOwner {
+    require(account != address(0), "Invalid account address");
+    roles[account] = Role.None;
+    emit RoleAssigned(account, Role.None);
+  }
 
   // ==================== 献血积分功能 ====================
 
@@ -136,9 +178,53 @@ contract BloodPoints is Ownable, ReentrancyGuard {
       assignedAt: 0
     });
     donorBloodIds[msg.sender].push(bloodId);
+    _bloodIdsByType[bloodType].push(bloodId);
+    _allBloodIds.push(bloodId);
 
     emit PointsAwarded(msg.sender, POINTS_PER_DONATION);
     emit BloodCreated(bloodId, msg.sender, bloodType, volume);
+  }
+
+  // ==================== 采集记录员功能 ====================
+
+  /// @notice 采集记录员录入献血记录
+  /// @param donor 献血者地址
+  /// @param bloodType 血型 (A/B/AB/O)
+  /// @param volume 献血量(ml)
+  function recordBlood(address donor, string calldata bloodType, uint256 volume) external nonReentrant onlyRole(Role.Collector) {
+    require(donor != address(0), "Invalid donor address");
+    require(bytes(bloodType).length > 0, "Blood type cannot be empty");
+    require(volume > 0, "Volume must be greater than 0");
+
+    // 发放积分给献血者
+    userPoints[donor] += POINTS_PER_DONATION;
+
+    // 如果是首次献血，记录到献血者列表
+    if (!isDonor[donor]) {
+      isDonor[donor] = true;
+      allDonors.push(donor);
+    }
+
+    // 创建血液追踪记录
+    uint256 bloodId = nextBloodId++;
+    bloodUnits[bloodId] = BloodUnit({
+      bloodId: bloodId,
+      donor: donor,
+      volume: volume,
+      bloodType: bloodType,
+      testedPassed: false,
+      patient: address(0),
+      status: BloodStatus.Donated,
+      donatedAt: block.timestamp,
+      testedAt: 0,
+      assignedAt: 0
+    });
+    donorBloodIds[donor].push(bloodId);
+    _bloodIdsByType[bloodType].push(bloodId);
+    _allBloodIds.push(bloodId);
+
+    emit PointsAwarded(donor, POINTS_PER_DONATION);
+    emit BloodCreated(bloodId, donor, bloodType, volume);
   }
 
   // ==================== 血液流转功能 ====================
@@ -146,7 +232,7 @@ contract BloodPoints is Ownable, ReentrancyGuard {
   /// @notice 血站接收血液
   /// @param bloodId 血液ID
   /// @param bloodBank 血站名称
-  function receiveBlood(uint256 bloodId, string calldata bloodBank) external onlyOwner {
+  function receiveBlood(uint256 bloodId, string calldata bloodBank) external onlyRole(Role.BloodBank) {
     BloodUnit storage unit = bloodUnits[bloodId];
     require(unit.bloodId == bloodId, "Blood unit does not exist");
     require(
@@ -173,7 +259,7 @@ contract BloodPoints is Ownable, ReentrancyGuard {
   /// @notice 血站检测血液
   /// @param bloodId 血液ID
   /// @param passed 检测是否合格
-  function testBlood(uint256 bloodId, bool passed) external onlyOwner {
+  function testBlood(uint256 bloodId, bool passed) external onlyRole(Role.BloodBank) {
     BloodUnit storage unit = bloodUnits[bloodId];
     require(unit.bloodId == bloodId, "Blood unit does not exist");
     require(unit.status == BloodStatus.Received, "Blood must be received before testing");
@@ -193,7 +279,7 @@ contract BloodPoints is Ownable, ReentrancyGuard {
   /// @notice 分配血液给病人
   /// @param bloodId 血液ID
   /// @param patientAddress 病人地址
-  function assignToPatient(uint256 bloodId, address patientAddress) external onlyOwner {
+  function assignToPatient(uint256 bloodId, address patientAddress) external onlyRole(Role.BloodBank) {
     BloodUnit storage unit = bloodUnits[bloodId];
     require(unit.bloodId == bloodId, "Blood unit does not exist");
     require(unit.status == BloodStatus.Tested, "Blood must be tested before assignment");
@@ -251,6 +337,39 @@ contract BloodPoints is Ownable, ReentrancyGuard {
   {
     require(bloodUnits[bloodId].bloodId == bloodId, "Blood unit does not exist");
     return (bloodUnits[bloodId], bloodTransfers[bloodId]);
+  }
+
+  /// @notice 按血型查询血液ID列表
+  /// @param bloodType 血型
+  /// @return 血液ID数组
+  function getBloodsByType(string calldata bloodType) external view returns (uint256[] memory) {
+    return _bloodIdsByType[bloodType];
+  }
+
+  /// @notice 查询所有血液ID
+  /// @return 血液ID数组
+  function getAllBloodIds() external view returns (uint256[] memory) {
+    return _allBloodIds;
+  }
+
+  /// @notice 按状态查询血液ID列表
+  /// @param status 血液状态
+  /// @return 血液ID数组
+  function getBloodsByStatus(BloodStatus status) external view returns (uint256[] memory) {
+    uint256 count = 0;
+    for (uint256 i = 0; i < _allBloodIds.length; i++) {
+      if (bloodUnits[_allBloodIds[i]].status == status) {
+        count++;
+      }
+    }
+    uint256[] memory result = new uint256[](count);
+    uint256 idx = 0;
+    for (uint256 i = 0; i < _allBloodIds.length; i++) {
+      if (bloodUnits[_allBloodIds[i]].status == status) {
+        result[idx++] = _allBloodIds[i];
+      }
+    }
+    return result;
   }
 
   // ==================== 积分转赠功能 ====================
