@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #FFFBFB; }
+.slide { padding: 80px 100px; height: 100%; display: flex; flex-direction: column; }
+.header { display: flex; align-items: center; gap: 16px; margin-bottom: 48px; }
+.header-line { width: 4px; height: 36px; background: #DC2626; border-radius: 2px; }
+h2 { font-size: 40px; font-weight: 800; color: #1F2937; }
+.roles { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 24px; }
+.role-card { background: #fff; border: 1px solid #E5E7EB; border-radius: 16px; padding: 28px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; transition: all 0.2s; position: relative; overflow: hidden; }
+.role-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+.role-card:nth-child(1)::before { background: #7F1D1D; }
+.role-card:nth-child(2)::before { background: #DC2626; }
+.role-card:nth-child(3)::before { background: #F87171; }
+.role-card:nth-child(4)::before { background: #FCA5A5; }
+.role-card:nth-child(5)::before { background: #FEE2E2; }
+.role-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(220,38,38,0.1); }
+.role-icon { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; border-radius: 16px; font-size: 28px; }
+.role-card:nth-child(1) .role-icon { background: #7F1D1D; color: #fff; }
+.role-card:nth-child(2) .role-icon { background: #FEF2F2; }
+.role-card:nth-child(3) .role-icon { background: #FEF2F2; }
+.role-card:nth-child(4) .role-icon { background: #FEF2F2; }
+.role-card:nth-child(5) .role-icon { background: #FEF2F2; }
+.role-name { font-size: 18px; font-weight: 700; color: #1F2937; }
+.role-tag { font-size: 12px; padding: 4px 12px; border-radius: 999px; font-weight: 600; }
+.role-card:nth-child(1) .role-tag { background: #7F1D1D; color: #fff; }
+.role-card:nth-child(2) .role-tag { background: #DC2626; color: #fff; }
+.role-card:nth-child(3) .role-tag { background: #FCA5A5; color: #7F1D1D; }
+.role-card:nth-child(4) .role-tag { background: #DBEAFE; color: #1E40AF; }
+.role-card:nth-child(5) .role-tag { background: #F3F4F6; color: #6B7280; }
+.perms { text-align: left; width: 100%; }
+.perm-item { font-size: 13px; color: #6B7280; padding: 6px 0; border-bottom: 1px solid #F3F4F6; display: flex; align-items: center; gap: 8px; }
+.perm-item:last-child { border-bottom: none; }
+.perm-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.role-card:nth-child(1) .perm-dot { background: #7F1D1D; }
+.role-card:nth-child(2) .perm-dot { background: #DC2626; }
+.role-card:nth-child(3) .perm-dot { background: #F87171; }
+.role-card:nth-child(4) .perm-dot { background: #60A5FA; }
+.role-card:nth-child(5) .perm-dot { background: #9CA3AF; }
+.footer { text-align: right; font-size: 14px; color: #9CA3AF; padding-top: 24px; border-top: 1px solid #F3F4F6; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="header">
+    <div class="header-line"></div>
+    <h2>项目分工 · 多方角色设计</h2>
+  </div>
+  <div class="roles">
+    <div class="role-card">
+      <div class="role-icon">👑</div>
+      <div class="role-name">管理员</div>
+      <span class="role-tag">Owner</span>
+      <div class="perms">
+        <div class="perm-item"><span class="perm-dot"></span>分配/撤销角色</div>
+        <div class="perm-item"><span class="perm-dot"></span>上架商品</div>
+        <div class="perm-item"><span class="perm-dot"></span>系统管理</div>
+      </div>
+    </div>
+    <div class="role-card">
+      <div class="role-icon">📝</div>
+      <div class="role-name">采集记录员</div>
+      <span class="role-tag">Collector</span>
+      <div class="perms">
+        <div class="perm-item"><span class="perm-dot"></span>录入献血记录</div>
+        <div class="perm-item"><span class="perm-dot"></span>为献血者发放积分</div>
+      </div>
+    </div>
+    <div class="role-card">
+      <div class="role-icon">🏥</div>
+      <div class="role-name">血站工作人员</div>
+      <span class="role-tag">BloodBank</span>
+      <div class="perms">
+        <div class="perm-item"><span class="perm-dot"></span>接收血液</div>
+        <div class="perm-item"><span class="perm-dot"></span>检测血液</div>
+        <div class="perm-item"><span class="perm-dot"></span>分配给病人</div>
+      </div>
+    </div>
+    <div class="role-card">
+      <div class="role-icon">💉</div>
+      <div class="role-name">献血者</div>
+      <span class="role-tag">Donor</span>
+      <div class="perms">
+        <div class="perm-item"><span class="perm-dot"></span>献血获积分</div>
+        <div class="perm-item"><span class="perm-dot"></span>积分转赠</div>
+        <div class="perm-item"><span class="perm-dot"></span>兑换商品</div>
+      </div>
+    </div>
+    <div class="role-card">
+      <div class="role-icon">🛏️</div>
+      <div class="role-name">病人</div>
+      <span class="role-tag">Patient</span>
+      <div class="perms">
+        <div class="perm-item"><span class="perm-dot"></span>接收合格血液</div>
+        <div class="perm-item"><span class="perm-dot"></span>记录血液来源</div>
+      </div>
+    </div>
+  </div>
+  <div class="footer">BloodPoints · 项目分工</div>
+</div>
+</body>
+</html>

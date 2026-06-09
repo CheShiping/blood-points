@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #FFFBFB; }
+.slide { padding: 80px 100px; height: 100%; display: flex; flex-direction: column; }
+.header { display: flex; align-items: center; gap: 16px; margin-bottom: 48px; }
+.header-line { width: 4px; height: 36px; background: #DC2626; border-radius: 2px; }
+h2 { font-size: 40px; font-weight: 800; color: #1F2937; }
+.content { flex: 1; display: flex; flex-direction: column; gap: 32px; }
+.tech-bar { display: flex; gap: 16px; flex-wrap: wrap; }
+.tech-tag { padding: 8px 20px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 999px; font-size: 15px; color: #991B1B; font-weight: 600; }
+.panels { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+.panel { background: #fff; border: 1px solid #E5E7EB; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; }
+.panel-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.panel-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: #FEF2F2; border-radius: 12px; font-size: 20px; }
+.panel-title { font-size: 20px; font-weight: 700; color: #1F2937; }
+.panel-desc { font-size: 14px; color: #6B7280; margin-bottom: 16px; line-height: 1.6; }
+.panel-features { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.panel-features li { font-size: 15px; color: #4B5563; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #F9FAFB; border-radius: 8px; }
+.panel-features li::before { content: ''; width: 6px; height: 6px; background: #DC2626; border-radius: 50%; flex-shrink: 0; }
+.footer { text-align: right; font-size: 14px; color: #9CA3AF; padding-top: 24px; border-top: 1px solid #F3F4F6; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="header">
+    <div class="header-line"></div>
+    <h2>功能详解 · 前端交互</h2>
+  </div>
+  <div class="content">
+    <div class="tech-bar">
+      <span class="tech-tag">React 19</span>
+      <span class="tech-tag">TypeScript</span>
+      <span class="tech-tag">wagmi</span>
+      <span class="tech-tag">viem</span>
+      <span class="tech-tag">RainbowKit</span>
+      <span class="tech-tag">Vite</span>
+    </div>
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-icon">💉</div>
+          <div class="panel-title">献血人员面板</div>
+        </div>
+        <p class="panel-desc">献血者的主要操作界面，包含积分管理与血液追踪</p>
+        <ul class="panel-features">
+          <li>查看当前积分余额</li>
+          <li>查看献血记录与血液时间线</li>
+          <li>积分转赠给其他用户</li>
+          <li>积分兑换商品</li>
+          <li>查看公益排行榜</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-icon">📝</div>
+          <div class="panel-title">采集记录员面板</div>
+        </div>
+        <p class="panel-desc">现场采血时使用，将血液记录上传到区块链</p>
+        <ul class="panel-features">
+          <li>输入献血者钱包地址</li>
+          <li>选择血型（A/B/AB/O）</li>
+          <li>选择献血量（200/300/400ml）</li>
+          <li>一键上传链上记录</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-icon">🏥</div>
+          <div class="panel-title">血站工作人员面板</div>
+        </div>
+        <p class="panel-desc">血站处理血液的完整工作台，覆盖全流程操作</p>
+        <ul class="panel-features">
+          <li>查看所有血液记录列表</li>
+          <li>接收血液（记录血站信息）</li>
+          <li>检测血液（合格/不合格）</li>
+          <li>分配血液给病人</li>
+          <li>按血型查询血液</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer">BloodPoints · 功能详解</div>
+</div>
+</body>
+</html>
