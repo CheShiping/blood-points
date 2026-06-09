@@ -35,3 +35,5 @@
 
 # Frontend node modules
 /frontend/node_modules
+
+.claude/skills
