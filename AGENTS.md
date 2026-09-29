@@ -81,3 +81,28 @@ This project uses **Hardhat 3** (`defineConfig` API, not legacy `module.exports`
 - **Hardcoded Alchemy key** in `frontend/src/config/wagmi.ts` — should use `import.meta.env`.
 - **No frontend test framework** configured.
 - **On-chain bubble sort** in `getLeaderboard()` — gas-inefficient for large donor lists.
+
+## Agent Workflow
+
+### 启动工作流（Startup Workflow）
+1. 运行 `./init.sh` 确认合约与前端构建、测试通过。
+2. 阅读状态文件 `feature_list.json` 与 `progress.md` 了解当前功能状态。
+3. 每次只挑选一个未完成的「单一功能」着手（一次只做一个功能）。
+
+### 验证命令（Verification Commands）
+- 合约：`npx hardhat test`、`npx hardhat test solidity`（详见上方 Commands 章节）。
+- 前端：`npm run build`、`npm run lint`（在 `frontend/` 目录）。
+- 状态文件：`feature_list.json`、`progress.md`。
+
+### 完成定义（Definition of Done）
+- 相关单元测试通过（合约和/或前端）。
+- 构建与类型检查通过（`npm run build`）。
+- 已在 `progress.md` 记录验证证据（命令与输出）。
+
+### 范围边界（Scope）
+- 一次只做一个功能（one feature at a time），不要越界修改无关文件。
+- 完成门槛由「完成定义」约束范围收尾，未达门槛不算完成。
+
+### 会话结束（End of Session）
+- 更新 `progress.md` 与 `session-handoff.md`。
+- 记录验证证据、阻塞项与下一步建议，保证下次会话可干净重启。

@@ -1,0 +1,110 @@
+{
+  "project": "BloodPoints (热血链)",
+  "features": [
+    {
+      "id": "contract-core",
+      "name": "积分与核心合约",
+      "description": "BloodPoints 合约：donateBlood / transferPoints / redeemProduct / getPoints，基于 Ownable + ReentrancyGuard。",
+      "status": "completed",
+      "dependencies": []
+    },
+    {
+      "id": "blood-tracking",
+      "name": "血液追踪生命周期",
+      "description": "receiveBlood / testBlood / assignToPatient 及查询函数 getBloodJourney 等，仅 owner 可调用。",
+      "status": "completed",
+      "dependencies": ["contract-core"]
+    },
+    {
+      "id": "leaderboard",
+      "name": "排行榜",
+      "description": "getLeaderboard() 返回地址与积分，当前用链上冒泡排序，规模大时 gas 低效。",
+      "status": "completed",
+      "dependencies": ["contract-core"]
+    },
+    {
+      "id": "contract-tests",
+      "name": "合约测试",
+      "description": "test/BloodPoints.ts 共 31 个 viem 测试，覆盖积分、血液追踪、状态机、权限与产品。",
+      "status": "completed",
+      "dependencies": ["contract-core", "blood-tracking"]
+    },
+    {
+      "id": "sepolia-deploy",
+      "name": "Sepolia 部署",
+      "description": "合约已部署至 Sepolia，地址 0x762a3de172619d3f7879d033966d31081a426aa2。",
+      "status": "completed",
+      "dependencies": ["contract-core", "blood-tracking"]
+    },
+    {
+      "id": "abi-pipeline",
+      "name": "ABI 导出流程",
+      "description": "scripts/export-abi.ts 将 artifacts 中的 ABI 导出到 frontend/src/contracts/BloodPoints.json。",
+      "status": "completed",
+      "dependencies": ["sepolia-deploy"]
+    },
+    {
+      "id": "frontend-wallet",
+      "name": "前端钱包连接",
+      "description": "WalletConnect 组件：RainbowKit ConnectButton + wagmi Sepolia 配置。",
+      "status": "completed",
+      "dependencies": ["sepolia-deploy", "abi-pipeline"]
+    },
+    {
+      "id": "frontend-donation",
+      "name": "前端献血组件",
+      "description": "BloodDonation.tsx：useReadContract 查积分，useWriteContract 调 donateBlood()。",
+      "status": "completed",
+      "dependencies": ["frontend-wallet"]
+    },
+    {
+      "id": "frontend-leaderboard",
+      "name": "前端排行榜组件",
+      "description": "Leaderboard.tsx：解码 getLeaderboard() 返回的 (address[], uint256[]) 元组。",
+      "status": "completed",
+      "dependencies": ["frontend-wallet", "leaderboard"]
+    },
+    {
+      "id": "frontend-transfer",
+      "name": "前端积分转账组件",
+      "description": "TransferPoints.tsx：调用 transferPoints(address, uint256)。",
+      "status": "completed",
+      "dependencies": ["frontend-wallet"]
+    },
+    {
+      "id": "frontend-redemption",
+      "name": "前端兑换组件",
+      "description": "ProductRedemption.tsx：遍历 getProduct(0..N) 并调用 redeemProduct(id)。",
+      "status": "completed",
+      "dependencies": ["frontend-wallet"]
+    },
+    {
+      "id": "frontend-bloodtracking",
+      "name": "前端血液追踪组件",
+      "description": "BloodTracking.tsx：血液旅程卡片、时间线可视化与一键模拟面板。",
+      "status": "completed",
+      "dependencies": ["frontend-wallet", "blood-tracking"]
+    },
+    {
+      "id": "leaderboard-gas-opt",
+      "name": "排行榜 gas 优化",
+      "description": "将 getLeaderboard() 的链上冒泡排序改为链下排序或分页，降低大规模 donor 列表的 gas。",
+      "status": "pending",
+      "dependencies": ["leaderboard"]
+    },
+    {
+      "id": "alchemy-env",
+      "name": "Alchemy key 移入环境变量",
+      "description": "将 frontend/src/config/wagmi.ts 中硬编码的 Alchemy key 改为 import.meta.env。",
+      "status": "pending",
+      "dependencies": ["frontend-wallet"]
+    },
+    {
+      "id": "frontend-tests",
+      "name": "前端测试框架",
+      "description": "目前未配置前端测试；需引入 Vitest/Testing Library 并覆盖核心组件交互。",
+      "status": "pending",
+      "dependencies": ["frontend-wallet"]
+    }
+  ]
+}
