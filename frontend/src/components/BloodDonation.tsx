@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
+import { Drop, Heart, Alert, CheckCircle } from './icons';
 
 const BLOOD_TYPES = ['A', 'B', 'AB', 'O'] as const;
 const VOLUMES = [200, 300, 400] as const;
@@ -47,7 +48,7 @@ export default function BloodDonation() {
   return (
     <div className="blood-donation-card">
       <div className="card-header">
-        <div className="card-icon">🩸</div>
+        <div className="card-icon"><Drop size={22} /></div>
         <h2 className="card-title">献血获取积分</h2>
       </div>
 
@@ -102,26 +103,26 @@ export default function BloodDonation() {
           {isPending ? (
             <>
               <span className="btn-spinner"></span>
-              处理中...
+              处理中…
             </>
           ) : (
             <>
-              <span className="btn-icon">❤️</span>
+              <span className="btn-icon"><Heart size={16} /></span>
               献血获取 100 积分
             </>
           )}
         </button>
 
         {error && (
-          <div className="error">
-            <span className="error-icon">⚠️</span>
+          <div className="error" role="alert">
+            <span className="error-icon"><Alert size={16} /></span>
             错误: {error.message}
           </div>
         )}
 
         {donationReceipt.isSuccess && (
-          <div className="tx-success">
-            <span className="tx-icon">✅</span>
+          <div className="tx-success" aria-live="polite">
+            <span className="tx-icon"><CheckCircle size={16} /></span>
             献血成功！已获得 100 积分，血液记录已上链
           </div>
         )}

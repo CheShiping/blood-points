@@ -47,10 +47,10 @@
   --radius-xl: 24px;
   --radius-full: 9999px;
 
-  /* 过渡 */
-  --transition-fast: all 0.15s ease;
-  --transition-normal: all 0.3s ease;
-  --transition-slow: all 0.5s ease;
+  /* 过渡（显式列出属性，避免 transition: all） */
+  --transition-fast: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
+  --transition-normal: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease, opacity 0.3s ease;
+  --transition-slow: transform 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease, background-color 0.5s ease, opacity 0.5s ease;
 }
 
 /* ============================================
@@ -326,7 +326,7 @@ body {
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-red);
+  box-shadow: var(--shadow-lg);
   border-color: var(--red-200);
 }
 
@@ -405,10 +405,7 @@ body {
 .points-number {
   font-size: 3.5rem;
   font-weight: 800;
-  background: var(--gradient-blood);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--red-600);
   line-height: 1;
 }
 
@@ -1023,6 +1020,12 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .leaderboard-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
   .features-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1105,7 +1108,7 @@ body {
   padding: 6px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   white-space: nowrap;
 }
 
@@ -1159,7 +1162,7 @@ body {
   border-radius: var(--radius-sm);
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
 .refresh-btn:hover {
@@ -1181,7 +1184,7 @@ body {
   border-radius: var(--radius-md);
   padding: 16px 20px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   box-shadow: var(--shadow-sm);
 }
 
@@ -1407,6 +1410,7 @@ body {
 
 .form-input:focus {
   border-color: var(--red-400);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
 .form-input:disabled {
@@ -1429,7 +1433,7 @@ body {
   font-size: 14px;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
 .type-btn:hover,
@@ -1490,7 +1494,7 @@ body {
   font-weight: 700;
   font-size: 14px;
   color: var(--text-secondary);
-  transition: all 0.3s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
 }
 
 .progress-step.done .step-number {
@@ -1532,7 +1536,7 @@ body {
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
   box-shadow: var(--shadow-red);
 }
 
@@ -1662,7 +1666,7 @@ body {
   padding: 20px;
 }
 
-.donor-panel > section {
+.donor-panel > * {
   margin-bottom: 24px;
 }
 
@@ -1676,7 +1680,7 @@ body {
 
 .blood-card.clickable {
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
 .blood-card.clickable:hover {
@@ -1720,9 +1724,574 @@ body {
   font-size: 12px;
   cursor: pointer;
   margin-left: auto;
-  transition: all 0.2s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 }
 
 .clear-btn:hover {
   background: var(--red-100);
+}
+
+/* ============================================
+   可访问性增强：焦点环 / 跳转链接 / 数字等宽 / 减少动效
+   ============================================ */
+
+*:focus-visible {
+  outline: 2px solid var(--red-600);
+  outline-offset: 2px;
+}
+
+.dark-input:focus-visible,
+.form-input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
+}
+
+/* 按钮化卡片：重置默认按钮样式以匹配原 div 外观 */
+.feature-card,
+.blood-card {
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.feature-card {
+  width: 100%;
+}
+
+.blood-card {
+  width: 100%;
+  border: 1px solid var(--red-100);
+  background: var(--bg-secondary);
+  display: block;
+}
+
+/* 跳转主内容链接（键盘可达，默认隐藏） */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  background: var(--bg-card);
+  color: var(--red-700);
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--red-300);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+}
+
+/* 数字列等宽，便于对齐比较 */
+.points-number,
+.points-cell,
+.points-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* flex 子项允许截断长地址文本 */
+.blood-card-info,
+.node-content {
+  min-width: 0;
+}
+
+.blood-donor,
+.address-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================
+   V3 主题覆盖 —— 暖色珊瑚红 / 偏红白 / 亲和圆角
+   仅覆盖 token 与少量结构类，原热血红逻辑保持可回退
+   ============================================ */
+
+:root {
+  /* 主强调：珊瑚红（覆盖原热血红，全站自动换色） */
+  --red-50:  #FDECEA;
+  --red-100: #FBD8D3;
+  --red-200: #F6B6AE;
+  --red-300: #F09187;
+  --red-400: #E97468;
+  --red-500: #E2553F;
+  --red-600: #E2553F;
+  --red-700: #C8432F;
+  --red-800: #A63626;
+  --red-900: #7E271B;
+
+  /* 背景 —— 偏红白 */
+  --bg-primary: #FFF1F1;
+  --bg-secondary: #FDEAEA;
+  --bg-card: #FFFFFF;
+  --bg-dark: #2A1414;
+
+  /* 文字 —— 暖灰 */
+  --text-primary: #3B2B2B;
+  --text-secondary: #7C6A6A;
+  --text-muted: #8C7070;
+  --text-white: #FFFFFF;
+
+  /* 渐变 —— 更柔和，去掉红晕 */
+  --gradient-blood: linear-gradient(135deg, #E97468 0%, #C8432F 100%);
+  --gradient-warm: linear-gradient(135deg, #F6B6AE 0%, #E2553F 100%);
+  --gradient-sunset: linear-gradient(135deg, #FBD8D3 0%, #F6B6AE 50%, #E2553F 100%);
+  --gradient-glow: none;
+
+  /* 阴影 —— 柔和 matte（暖色、低饱和） */
+  --shadow-sm: 0 1px 2px rgba(190, 100, 80, 0.06);
+  --shadow-md: 0 8px 20px -6px rgba(200, 110, 90, 0.12);
+  --shadow-lg: 0 18px 36px -10px rgba(200, 110, 90, 0.16);
+  --shadow-red: 0 12px 26px -8px rgba(226, 85, 63, 0.30);
+  --shadow-red-lg: 0 22px 44px -12px rgba(226, 85, 63, 0.38);
+
+  /* 新增语义变量 */
+  --border: #F2D6D1;
+  --accent-soft: #FCE7E3;
+  --accent-tint: #FDEEEB;
+  --success-bg: #EAF7EE;
+  --success-border: #B7E4C4;
+  --success-text: #1F7A3D;
+  --success-dot: #2FB457;
+}
+
+/* 去背景红晕 */
+body { background-image: none; }
+
+/* 导航：浅红白药丸 + 柔和边框，去掉大红渐变与红影 */
+.wallet-connect {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: none;
+}
+.connect-wrapper button {
+  background: rgba(255, 255, 255, 0.5) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  color: var(--red-700) !important;
+  font-weight: 600 !important;
+  padding: 0.6rem 1.1rem !important;
+}
+.connect-wrapper button:hover {
+  background: rgba(255, 255, 255, 0.72) !important;
+  transform: translateY(-2px);
+}
+.logo-icon { animation: none; font-size: 1.9rem; color: var(--red-600); }
+.logo-text { color: var(--text-primary); text-shadow: none; }
+
+/* 头部标题：去掉渐变裁切文字，改为暖色实色 */
+.app-header { border: 1px solid var(--border); background: var(--bg-card); }
+.app-header h1 {
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: var(--text-primary);
+  background-clip: initial;
+  color: var(--text-primary);
+}
+
+/* 卡片 / 功能卡边框柔和化 */
+.card { border: 1px solid var(--border); }
+.feature-card { border: 1px solid var(--border); }
+
+/* 图标容器：珊瑚红软圈 */
+.card-header { display: flex; align-items: center; gap: 0.75rem; }
+.feature-icon,
+.card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--red-600);
+}
+.feature-icon { width: 56px; height: 56px; border-radius: 50%; margin-bottom: 1rem; }
+.card-icon { width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; }
+
+/* 导航选中态用珊瑚红 */
+.nav-link.active { color: var(--red-600); }
+.nav-link.active::after { background: var(--red-600); }
+.nav-icon { display: inline-flex; }
+
+/* 成功提示与状态点改用语义 token */
+.tx-success { background: var(--success-bg); border: 1px solid var(--success-border); color: var(--success-text); }
+.status-dot { background: var(--success-dot); }
+
+/* 区块标题与图标对齐 */
+.section-title { display: flex; align-items: center; gap: 0.5rem; }
+.title-icon { color: var(--red-600); flex-shrink: 0; }
+.welcome-icon { color: var(--red-600); display: inline-flex; }
+
+/* 排行榜头像（地址首字母缩写） */
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--red-600);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.address-cell { vertical-align: middle; }
+.address-cell .avatar { vertical-align: middle; margin-right: 0.6rem; }
+.address-cell .address-text { vertical-align: middle; display: inline-block; }
+
+/* 子标题 / 商品图标 / 表单标签图标 与文字对齐 */
+.section-subtitle { display: flex; align-items: center; gap: 0.5rem; }
+.product-icon { display: inline-flex; color: var(--red-600); }
+.label-icon { display: inline-flex; align-items: center; }
+
+/* ===== V3 打磨：去渐变标题 / 中性边框 / 柔和投影 / 可访问性 ===== */
+/* 欢迎大标题：去渐变，改暖色实色 + 平衡换行 */
+.welcome-content h2 {
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: var(--text-primary);
+  background-clip: initial;
+  color: var(--text-primary);
+  text-wrap: balance;
+}
+
+/* 头部标题平衡换行 */
+.app-header h1 { text-wrap: balance; }
+
+/* 统一收敛红色边框为中性浅边 */
+.welcome-section,
+.collector-panel,
+.bloodbank-card,
+.blood-card { border-color: var(--border); }
+
+/* 功能卡描述提高对比度 */
+.feature-card p { color: var(--text-secondary); }
+
+/* 卡片 / 功能卡 hover 用柔和投影而非红色辉光 */
+.feature-card:hover { box-shadow: var(--shadow-lg); }
+
+/* 吸顶导航下锚点不被遮挡 */
+.donor-panel,
+.bloodbank-panel,
+.collector-panel,
+.welcome-section { scroll-margin-top: 5.5rem; }
+
+/* ============================================
+   V4 —— 玻璃质感顶栏 + 原型图对齐
+   ============================================ */
+
+/* 玻璃拟态吸顶导航：半透明白 + 背景模糊 + 高光描边 */
+.wallet-connect {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 32px rgba(226, 85, 63, 0.12);
+}
+
+/* 导航链接在玻璃底上可读（覆盖旧深色主题遗留的白色文字） */
+.nav-link { color: var(--text-secondary); }
+.nav-link:hover { color: var(--red-600); background: rgba(226, 85, 63, 0.08); }
+.nav-link.active { color: var(--red-600); background: rgba(226, 85, 63, 0.10); }
+
+/* 功能卡对齐原型：粉色矩形卡 + 白色圆形图标 + 左对齐文案 */
+.feature-card {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  text-align: left;
+}
+.feature-icon {
+  background: #FFFFFF;
+  color: var(--red-600);
+  box-shadow: 0 2px 10px rgba(226, 85, 63, 0.18);
+}
+
+/* 去掉面板顶部装饰渐变条，匹配原型的纯净白色矩形面板 */
+.welcome-section::before,
+.app-header::before,
+.card::before { display: none; }
+
+/* 卡片 hover 回归柔和投影，去掉位移断点 */
+.card:hover { transform: none; }
+
+/* 尊重用户的「减少动效」偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================
+   V5 —— 原型对齐：偏白背景 + 右上角粉色光晕 + 卡片常驻阴影
+   ============================================ */
+
+/* 页面背景：大面积偏白，仅右上角有粉色「映照」下来的光晕 */
+:root {
+  --bg-primary: #FFFBFA;
+}
+body {
+  background-color: var(--bg-primary);
+  background-image:
+    radial-gradient(1100px 700px at 88% -8%, rgba(242, 160, 150, 0.35) 0%, rgba(242, 160, 150, 0) 62%),
+    radial-gradient(800px 520px at 100% 22%, rgba(251, 216, 211, 0.5) 0%, rgba(251, 216, 211, 0) 60%);
+  background-attachment: fixed;
+}
+
+/* 卡片统一：微粉渐变近白底 + 自身常驻柔和阴影（不依赖 hover） */
+.app-header,
+.welcome-section,
+.card,
+.blood-donation-card,
+.feature-card,
+.blood-card,
+.donor-panel,
+.collector-panel,
+.bloodbank-panel,
+.bloodbank-card {
+  background: linear-gradient(180deg, #FDF5F4 0%, #FEFCFB 55%, #FFFFFF 100%);
+  box-shadow: var(--shadow-md);
+}
+
+/* 卡片不做 hover 位移 / 阴影加深 / 顶部渐变条 */
+.card::after { display: none; }
+.card:hover,
+.feature-card:hover,
+.blood-donation-card:hover,
+.blood-card:hover {
+  transform: none;
+  box-shadow: var(--shadow-md);
+  border-color: var(--border);
+}
+
+/* ============================================
+   V6 —— 首页：榜单 + 积分圆环布局
+   ============================================ */
+
+/* 榜单 / 圆环卡同样纳入微粉渐变近白底 + 常驻阴影 */
+.leaderboard-card,
+.points-ring-card {
+  background: linear-gradient(180deg, #FDF5F4 0%, #FEFCFB 55%, #FFFFFF 100%);
+  box-shadow: var(--shadow-md);
+  padding: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+}
+
+/* 首页统计区：圆环在左、榜单在右，两卡等高 */
+.home-stats {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+/* 左侧积分卡在等高拉伸时内容垂直居中分布 */
+.points-ring-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 积分圆环 */
+.ring-wrap {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin: 0.5rem auto 1.25rem;
+}
+.ring-svg {
+  transform: rotate(-90deg);
+}
+.ring-track {
+  fill: none;
+  stroke: var(--red-100);
+  stroke-width: 14;
+}
+.ring-fill {
+  fill: none;
+  stroke: var(--red-500);
+  stroke-width: 14;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s ease;
+}
+.ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ring-value {
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--red-600);
+  font-variant-numeric: tabular-nums;
+}
+.ring-label {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.ring-hint {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.ring-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+.ring-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--red-600);
+}
+
+/* 窄屏：统计区单列堆叠 */
+@media (max-width: 900px) {
+  .home-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   V7 —— 榜单行式列表对齐原型（去掉黄灰渐变行）
+   ============================================ */
+
+.leaderboard-list {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.rank-num {
+  width: 22px;
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard-row .avatar {
+  background: var(--accent-soft);
+  color: var(--red-600);
+}
+
+.lb-address {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.lb-points {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--red-600);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 刷新按钮：还原为原表格设计的小按钮样式（覆盖 V7 通栏覆盖） */
+.leaderboard-card .refresh-btn {
+  width: auto;
+  display: inline-flex;
+  background: var(--bg-card);
+  border: 1px solid var(--red-200);
+  border-radius: var(--radius-sm);
+  color: var(--red-600);
+  padding: 6px 16px;
+}
+.leaderboard-card .refresh-btn:hover {
+  background: var(--red-50);
+  border-color: var(--red-300);
+}
+
+/* 首页四个角色卡片：占满整行，位于圆环/榜单下方 */
+.feature-section {
+  grid-column: 1 / -1;
+}
+
+/* ============================================
+   V8 —— 头部：文字居左、连接状态居右、去胶囊底
+   ============================================ */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  text-align: left;
+}
+.header-text h1 { margin-bottom: 0.25rem; }
+
+/* 连接状态：纯文字 + 绿点，无背景矩形 */
+.wallet-status {
+  margin-top: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ============================================
+   V9 —— 首页去掉欢迎卡；头部去框（纯文字融入背景）
+   ============================================ */
+
+.app-header {
+  background: none;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0.5rem 0 0;
+  margin-bottom: 1.25rem;
 }

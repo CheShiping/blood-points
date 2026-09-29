@@ -1,6 +1,8 @@
 
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
+import type { ReactNode } from 'react';
+import { ShoppingBag, Gift, Package, Alert, CheckCircle, getProductIcon as productIcon } from './icons';
 
 // Helper component to fetch a single product by ID
 function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, getProductIcon }: {
@@ -9,7 +11,7 @@ function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, 
   isPending: boolean;
   userPoints: bigint | undefined;
   onRedeem: (id: bigint) => void;
-  getProductIcon: (index: number) => string;
+  getProductIcon: (index: number) => ReactNode;
 }) {
   const { data: product } = useReadContract({
     abi: CONTRACT_ABI.abi,
@@ -50,13 +52,13 @@ function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, 
         disabled={!isConnected || isPending || stock === 0n || (!!userPoints && userPoints < price)}
       >
         {isPending ? (
-          <><span className="btn-spinner"></span>兑换中...</>
+          <><span className="btn-spinner"></span>兑换中…</>
         ) : stock === 0n ? (
           '缺货'
         ) : userPoints && userPoints < price ? (
           '积分不足'
         ) : (
-          '🎁 兑换'
+          <><Gift size={16} /> 兑换</>
         )}
       </button>
     </div>
@@ -108,15 +110,12 @@ export default function ProductRedemption() {
     refetchPoints();
   }
 
-  const getProductIcon = (index: number) => {
-    const icons = ['🎁', '🛍️', '🎀', '⭐', '🎈', '🎯', '🎪', '🎭'];
-    return icons[index % icons.length];
-  };
+  const getProductIcon = (index: number) => productIcon(index);
 
   return (
     <div className="product-redemption-card">
       <div className="card-header">
-        <div className="card-icon">🛍️</div>
+        <div className="card-icon"><ShoppingBag size={22} /></div>
         <h2 className="card-title">商品兑换</h2>
         {userPoints !== undefined && (
           <div className="wallet-status" style={{ marginLeft: 'auto', marginTop: 0 }}>
@@ -127,7 +126,7 @@ export default function ProductRedemption() {
 
       {!nextProductId || nextProductId === 0n ? (
         <div className="empty-state">
-          <div className="empty-icon">📦</div>
+          <div className="empty-icon"><Package size={40} /></div>
           <div>暂无可兑换商品</div>
         </div>
       ) : (
@@ -147,15 +146,15 @@ export default function ProductRedemption() {
       )}
 
       {error && (
-        <div className="error">
-          <span className="error-icon">⚠️</span>
+        <div className="error" role="alert">
+          <span className="error-icon"><Alert size={16} /></span>
           错误: {error.message}
         </div>
       )}
 
       {redeemReceipt.isSuccess && (
-        <div className="tx-success">
-          <span className="tx-icon">✅</span>
+        <div className="tx-success" aria-live="polite">
+          <span className="tx-icon"><CheckCircle size={16} /></span>
           兑换成功！
         </div>
       )}

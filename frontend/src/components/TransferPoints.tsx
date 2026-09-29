@@ -2,6 +2,7 @@
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useState } from 'react';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
+import { Heart, User, Gem, Alert, CheckCircle } from './icons';
 
 export default function TransferPoints() {
   const { isConnected } = useAccount();
@@ -38,39 +39,46 @@ export default function TransferPoints() {
   return (
     <div className="transfer-card">
       <div className="card-header">
-        <div className="card-icon">💝</div>
+        <div className="card-icon"><Heart size={22} /></div>
         <h2 className="card-title">爱心转赠</h2>
       </div>
 
       <form onSubmit={handleTransfer} className="transfer-form">
         <div className="form-group">
           <label>
-            <span className="label-icon">👤</span>
+            <span className="label-icon"><User size={16} /></span>
             接收地址
           </label>
           <input
             type="text"
             className="dark-input"
-            placeholder="0x..."
+            name="recipient"
+            placeholder="0x…"
             value={toAddress}
             onChange={(e) => setToAddress(e.target.value)}
             disabled={!isConnected}
+            autoComplete="off"
+            spellCheck={false}
+            inputMode="text"
           />
         </div>
 
         <div className="form-group">
           <label>
-            <span className="label-icon">💎</span>
+            <span className="label-icon"><Gem size={16} /></span>
             转赠积分
           </label>
           <input
             type="number"
             className="dark-input"
+            name="amount"
             placeholder="输入积分数量"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             disabled={!isConnected}
             min="1"
+            autoComplete="off"
+            inputMode="numeric"
           />
         </div>
 
@@ -82,26 +90,26 @@ export default function TransferPoints() {
           {isPending ? (
             <>
               <span className="btn-spinner"></span>
-              转赠中...
+              转赠中…
             </>
           ) : (
             <>
-              <span className="btn-icon">💝</span>
+              <span className="btn-icon"><Heart size={16} /></span>
               转赠积分
             </>
           )}
         </button>
 
         {error && (
-          <div className="error">
-            <span className="error-icon">⚠️</span>
+          <div className="error" role="alert">
+            <span className="error-icon"><Alert size={16} /></span>
             错误: {error.message}
           </div>
         )}
 
         {transferReceipt.isSuccess && (
-          <div className="tx-success">
-            <span className="tx-icon">✅</span>
+          <div className="tx-success" aria-live="polite">
+            <span className="tx-icon"><CheckCircle size={16} /></span>
             转赠成功！
           </div>
         )}

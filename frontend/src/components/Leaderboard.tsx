@@ -1,6 +1,7 @@
 
 import { useReadContract } from 'wagmi';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
+import { Trophy, ClipboardList, Refresh } from './icons';
 
 export default function Leaderboard() {
   const { data: leaderboardRaw, refetch, isLoading } = useReadContract({
@@ -16,9 +17,6 @@ export default function Leaderboard() {
     : [];
 
   const getRankIcon = (index: number) => {
-    if (index === 0) return '🥇';
-    if (index === 1) return '🥈';
-    if (index === 2) return '🥉';
     return `${index + 1}`;
   };
 
@@ -37,18 +35,18 @@ export default function Leaderboard() {
   return (
     <div className="leaderboard-card">
       <div className="card-header">
-        <div className="card-icon">🏆</div>
+        <div className="card-icon"><Trophy size={22} /></div>
         <h2 className="card-title">公益排行榜</h2>
       </div>
 
       {isLoading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <div>加载中...</div>
+          <div>加载中…</div>
         </div>
       ) : !leaderboard || leaderboard.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">📋</div>
+          <div className="empty-icon"><ClipboardList size={40} /></div>
           <div>暂无排行榜数据</div>
         </div>
       ) : (
@@ -68,6 +66,7 @@ export default function Leaderboard() {
                     <span className="rank-icon">{getRankIcon(index)}</span>
                   </td>
                   <td className="address-cell">
+                    <span className="avatar">{item.user.slice(2, 4).toUpperCase()}</span>
                     <span className="address-text">{shortAddress(item.user)}</span>
                   </td>
                   <td className="points-cell">
@@ -81,7 +80,7 @@ export default function Leaderboard() {
       )}
 
       <button className="refresh-btn" onClick={() => refetch()}>
-        🔄 刷新榜单
+        <Refresh size={16} /> 刷新榜单
       </button>
     </div>
   );

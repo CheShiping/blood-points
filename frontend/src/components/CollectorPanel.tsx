@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
+import { Clipboard, Upload, Alert, CheckCircle } from './icons';
 
 const BLOOD_TYPES = ['A', 'B', 'AB', 'O'] as const;
 const VOLUMES = [200, 300, 400] as const;
@@ -37,7 +38,7 @@ export default function CollectorPanel() {
   return (
     <div className="collector-panel">
       <div className="card-header">
-        <div className="card-icon">📝</div>
+        <div className="card-icon"><Clipboard size={22} /></div>
         <h2 className="card-title">采集血液记录</h2>
       </div>
 
@@ -50,10 +51,14 @@ export default function CollectorPanel() {
             <input
               type="text"
               className="form-input"
-              placeholder="0x..."
+              name="donorAddress"
+              placeholder="0x…"
               value={donorAddr}
               onChange={(e) => setDonorAddr(e.target.value)}
               disabled={!isConnected || isPending}
+              autoComplete="off"
+              spellCheck={false}
+              inputMode="text"
             />
           </div>
 
@@ -98,22 +103,22 @@ export default function CollectorPanel() {
           disabled={!isConnected || isPending || !donorAddr}
         >
           {isPending ? (
-            <><span className="btn-spinner"></span>上传中...</>
+            <><span className="btn-spinner"></span>上传中…</>
           ) : (
-            <><span className="btn-icon">📝</span>上传血液记录</>
+            <><span className="btn-icon"><Upload size={16} /></span>上传血液记录</>
           )}
         </button>
 
         {error && (
-          <div className="error">
-            <span className="error-icon">⚠️</span>
+          <div className="error" role="alert">
+            <span className="error-icon"><Alert size={16} /></span>
             错误: {error.message}
           </div>
         )}
 
         {receipt.isSuccess && (
-          <div className="tx-success">
-            <span className="tx-icon">✅</span>
+          <div className="tx-success" aria-live="polite">
+            <span className="tx-icon"><CheckCircle size={16} /></span>
             血液记录上传成功！献血者已获得 100 积分
           </div>
         )}

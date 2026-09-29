@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
+import { Hospital, ClipboardList, Inbox, Microscope, Search, Alert, CheckCircle, X, Refresh, Drop } from './icons';
 
 const BLOOD_TYPES = ['A', 'B', 'AB', 'O'] as const;
 
@@ -37,15 +38,15 @@ function AllBloodList({ onSelectBlood }: { onSelectBlood: (id: string) => void }
 
   return (
     <div className="bloodbank-section all-blood-list">
-      <h3 className="section-subtitle">📋 所有血液记录</h3>
+      <h3 className="section-subtitle"><ClipboardList size={18} className="title-icon" /> 所有血液记录</h3>
       <p className="section-desc">点击任意血液卡片，自动填入下方操作表单</p>
       <button className="refresh-btn" onClick={() => refetch()} disabled={isLoading}>
-        {isLoading ? '加载中...' : '🔄 刷新'}
+        {isLoading ? '加载中...' : <><Refresh size={16} /> 刷新</>}
       </button>
 
       {ids.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🩸</div>
+          <div className="empty-icon"><Drop size={40} /></div>
           <p>暂无血液记录，请先让采集记录员上传</p>
         </div>
       ) : (
@@ -77,7 +78,7 @@ function BloodListItem({ bloodId, onSelect }: { bloodId: bigint; onSelect: (id: 
   };
 
   return (
-    <div className="blood-card clickable" onClick={() => onSelect(bloodId.toString())}>
+    <button type="button" className="blood-card clickable" onClick={() => onSelect(bloodId.toString())}>
       <div className="blood-card-header">
         <div className="blood-card-info">
           <span className="blood-id">#{bloodUnit.bloodId.toString()}</span>
@@ -90,9 +91,9 @@ function BloodListItem({ bloodId, onSelect }: { bloodId: bigint; onSelect: (id: 
         </span>
       </div>
       {bloodUnit.status === 2 && !bloodUnit.testedPassed && (
-        <div className="blood-card-warning">⚠️ 检测不合格，不可分配</div>
+        <div className="blood-card-warning"><Alert size={16} /> 检测不合格，不可分配</div>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -134,7 +135,7 @@ function ReceiveSection({ selectedBloodId, onClear }: { selectedBloodId: string;
 
   return (
     <div className="bloodbank-section">
-      <h3 className="section-subtitle">📥 接收血液</h3>
+      <h3 className="section-subtitle"><Inbox size={18} className="title-icon" /> 接收血液</h3>
       <p className="section-desc">接收来自献血者的血液，记录血站信息</p>
 
       <div className="donation-form">
@@ -143,11 +144,15 @@ function ReceiveSection({ selectedBloodId, onClear }: { selectedBloodId: string;
           <input
             type="number"
             className="form-input"
+            name="bloodId"
             placeholder="点击上方列表选择，或手动输入"
             value={bloodId}
             onChange={(e) => setBloodId(e.target.value)}
             disabled={!isConnected || isPending}
             min="0"
+            autoComplete="off"
+            inputMode="numeric"
+            spellCheck={false}
           />
         </div>
         <div className="form-row">
@@ -155,10 +160,13 @@ function ReceiveSection({ selectedBloodId, onClear }: { selectedBloodId: string;
           <input
             type="text"
             className="form-input"
+            name="bankName"
             placeholder="例如：血站A"
             value={bankName}
             onChange={(e) => setBankName(e.target.value)}
             disabled={!isConnected || isPending}
+            autoComplete="off"
+            spellCheck={false}
           />
         </div>
       </div>
@@ -169,22 +177,22 @@ function ReceiveSection({ selectedBloodId, onClear }: { selectedBloodId: string;
         disabled={!isConnected || isPending || !bloodId || !bankName}
       >
         {isPending ? (
-          <><span className="btn-spinner"></span>处理中...</>
+          <><span className="btn-spinner"></span>处理中…</>
         ) : (
-          <><span className="btn-icon">📥</span>接收血液</>
+          <><span className="btn-icon"><Inbox size={16} /></span>接收血液</>
         )}
       </button>
 
       {error && (
-        <div className="error">
-          <span className="error-icon">⚠️</span>
+        <div className="error" role="alert">
+          <span className="error-icon"><Alert size={16} /></span>
           错误: {error.message}
         </div>
       )}
 
       {receipt.isSuccess && (
-        <div className="tx-success">
-          <span className="tx-icon">✅</span>
+        <div className="tx-success" aria-live="polite">
+          <span className="tx-icon"><CheckCircle size={16} /></span>
           血液接收成功！
         </div>
       )}
@@ -228,7 +236,7 @@ function TestSection({ selectedBloodId, onClear }: { selectedBloodId: string; on
 
   return (
     <div className="bloodbank-section">
-      <h3 className="section-subtitle">🔬 检测血液</h3>
+      <h3 className="section-subtitle"><Microscope size={18} className="title-icon" /> 检测血液</h3>
       <p className="section-desc">对已接收的血液进行质量检测</p>
 
       <div className="donation-form">
@@ -237,11 +245,15 @@ function TestSection({ selectedBloodId, onClear }: { selectedBloodId: string; on
           <input
             type="number"
             className="form-input"
+            name="bloodId"
             placeholder="点击上方列表选择，或手动输入"
             value={bloodId}
             onChange={(e) => setBloodId(e.target.value)}
             disabled={!isConnected || isPending}
             min="0"
+            autoComplete="off"
+            inputMode="numeric"
+            spellCheck={false}
           />
         </div>
         <div className="form-row">
@@ -253,7 +265,7 @@ function TestSection({ selectedBloodId, onClear }: { selectedBloodId: string; on
               onClick={() => setPassed(true)}
               disabled={isPending}
             >
-              ✅ 合格
+              <CheckCircle size={16} /> 合格
             </button>
             <button
               type="button"
@@ -261,7 +273,7 @@ function TestSection({ selectedBloodId, onClear }: { selectedBloodId: string; on
               onClick={() => setPassed(false)}
               disabled={isPending}
             >
-              ❌ 不合格
+              <X size={16} /> 不合格
             </button>
           </div>
         </div>
@@ -273,22 +285,22 @@ function TestSection({ selectedBloodId, onClear }: { selectedBloodId: string; on
         disabled={!isConnected || isPending || !bloodId}
       >
         {isPending ? (
-          <><span className="btn-spinner"></span>处理中...</>
+          <><span className="btn-spinner"></span>处理中…</>
         ) : (
-          <><span className="btn-icon">🔬</span>提交检测结果</>
+          <><span className="btn-icon"><Microscope size={16} /></span>提交检测结果</>
         )}
       </button>
 
       {error && (
-        <div className="error">
-          <span className="error-icon">⚠️</span>
+        <div className="error" role="alert">
+          <span className="error-icon"><Alert size={16} /></span>
           错误: {error.message}
         </div>
       )}
 
       {receipt.isSuccess && (
-        <div className="tx-success">
-          <span className="tx-icon">✅</span>
+        <div className="tx-success" aria-live="polite">
+          <span className="tx-icon"><CheckCircle size={16} /></span>
           检测结果已提交！
         </div>
       )}
@@ -333,7 +345,7 @@ function AssignSection({ selectedBloodId, onClear }: { selectedBloodId: string; 
 
   return (
     <div className="bloodbank-section">
-      <h3 className="section-subtitle">🏥 分配血液</h3>
+      <h3 className="section-subtitle"><Hospital size={18} className="title-icon" /> 分配血液</h3>
       <p className="section-desc">将检测合格的血液分配给病人</p>
 
       <div className="donation-form">
@@ -342,11 +354,15 @@ function AssignSection({ selectedBloodId, onClear }: { selectedBloodId: string; 
           <input
             type="number"
             className="form-input"
+            name="bloodId"
             placeholder="点击上方列表选择，或手动输入"
             value={bloodId}
             onChange={(e) => setBloodId(e.target.value)}
             disabled={!isConnected || isPending}
             min="0"
+            autoComplete="off"
+            inputMode="numeric"
+            spellCheck={false}
           />
         </div>
         <div className="form-row">
@@ -354,10 +370,14 @@ function AssignSection({ selectedBloodId, onClear }: { selectedBloodId: string; 
           <input
             type="text"
             className="form-input"
-            placeholder="0x..."
+            name="patientAddress"
+            placeholder="0x…"
             value={patientAddr}
             onChange={(e) => setPatientAddr(e.target.value)}
             disabled={!isConnected || isPending}
+            autoComplete="off"
+            spellCheck={false}
+            inputMode="text"
           />
         </div>
       </div>
@@ -368,22 +388,22 @@ function AssignSection({ selectedBloodId, onClear }: { selectedBloodId: string; 
         disabled={!isConnected || isPending || !bloodId || !patientAddr}
       >
         {isPending ? (
-          <><span className="btn-spinner"></span>处理中...</>
+          <><span className="btn-spinner"></span>处理中…</>
         ) : (
-          <><span className="btn-icon">🏥</span>分配给病人</>
+          <><span className="btn-icon"><Hospital size={16} /></span>分配给病人</>
         )}
       </button>
 
       {error && (
-        <div className="error">
-          <span className="error-icon">⚠️</span>
+        <div className="error" role="alert">
+          <span className="error-icon"><Alert size={16} /></span>
           错误: {error.message}
         </div>
       )}
 
       {receipt.isSuccess && (
-        <div className="tx-success">
-          <span className="tx-icon">✅</span>
+        <div className="tx-success" aria-live="polite">
+          <span className="tx-icon"><CheckCircle size={16} /></span>
           血液分配成功！
         </div>
       )}
@@ -414,7 +434,7 @@ function BloodQuerySection() {
 
   return (
     <div className="bloodbank-section">
-      <h3 className="section-subtitle">🔍 按血型查询</h3>
+      <h3 className="section-subtitle"><Search size={18} className="title-icon" /> 按血型查询</h3>
 
       <div className="donation-form">
         <div className="form-row">
@@ -435,9 +455,9 @@ function BloodQuerySection() {
 
       <button className="donate-btn" onClick={handleSearch} disabled={isLoading}>
         {isLoading ? (
-          <><span className="btn-spinner"></span>查询中...</>
+          <><span className="btn-spinner"></span>查询中…</>
         ) : (
-          <><span className="btn-icon">🔍</span>查询 {queryType} 型血液</>
+          <><span className="btn-icon"><Search size={16} /></span>查询 {queryType} 型血液</>
         )}
       </button>
 
@@ -445,7 +465,7 @@ function BloodQuerySection() {
         <div className="blood-query-results">
           {ids.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📋</div>
+              <div className="empty-icon"><ClipboardList size={40} /></div>
               <p>暂无 {queryType} 型血液记录</p>
             </div>
           ) : (
@@ -507,7 +527,7 @@ export default function BloodBankPanel() {
   return (
     <div className="bloodbank-panel">
       <div className="card-header">
-        <div className="card-icon">🏥</div>
+        <div className="card-icon"><Hospital size={22} /></div>
         <h2 className="card-title">血站工作台</h2>
       </div>
 

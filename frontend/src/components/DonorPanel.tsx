@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
+import { Drop, Gem, Heart, User, ShoppingBag, Package, Alert, CheckCircle, Syringe, Hospital, Gift, getProductIcon as productIcon } from './icons';
 
 const STATUS_LABELS: Record<number, { text: string; className: string }> = {
   0: { text: '已献血', className: 'status-donated' },
@@ -44,7 +45,7 @@ function BloodTimeline({ bloodId }: { bloodId: bigint }) {
 
   const formatTime = (ts: bigint) => {
     if (ts === 0n) return '—';
-    return new Date(Number(ts) * 1000).toLocaleString('zh-CN');
+    return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(Number(ts) * 1000));
   };
 
   const shortAddr = (addr: string) => {
@@ -55,11 +56,11 @@ function BloodTimeline({ bloodId }: { bloodId: bigint }) {
   return (
     <div className="blood-timeline">
       <div className="timeline-title">
-        🩸 血液 #{unit.bloodId.toString()} ({unit.bloodType}型, {unit.volume.toString()}ml)
+        <Drop size={16} /> 血液 #{unit.bloodId.toString()} ({unit.bloodType}型, {unit.volume.toString()}ml)
       </div>
       <div className="timeline-nodes">
         <div className="timeline-node active">
-          <div className="node-icon">💉</div>
+          <div className="node-icon"><Syringe size={20} /></div>
           <div className="node-content">
             <div className="node-label">献血者</div>
             <div className="node-value">{shortAddr(unit.donor)}</div>
@@ -70,7 +71,7 @@ function BloodTimeline({ bloodId }: { bloodId: bigint }) {
         {transfers.map((transfer, i) => (
           <div key={i} className={`timeline-node ${i === transfers.length - 1 && unit.status < 3 ? 'current' : 'active'}`}>
             <div className="node-connector">→</div>
-            <div className="node-icon">🏥</div>
+            <div className="node-icon"><Hospital size={20} /></div>
             <div className="node-content">
               <div className="node-label">{transfer.bloodBank}</div>
               <div className="node-value">接收: {formatTime(transfer.receivedAt)}</div>
@@ -84,7 +85,7 @@ function BloodTimeline({ bloodId }: { bloodId: bigint }) {
         {unit.status === 3 && (
           <div className="timeline-node active">
             <div className="node-connector">→</div>
-            <div className="node-icon">🏥</div>
+            <div className="node-icon"><Hospital size={20} /></div>
             <div className="node-content">
               <div className="node-label">病人</div>
               <div className="node-value">{shortAddr(unit.patient)}</div>
@@ -115,7 +116,7 @@ function BloodCard({ bloodId }: { bloodId: bigint }) {
   const statusInfo = STATUS_LABELS[bloodUnit.status] || { text: '未知', className: '' };
 
   return (
-    <div className="blood-card" onClick={() => setExpanded(!expanded)}>
+    <button type="button" className="blood-card" onClick={() => setExpanded(!expanded)}>
       <div className="blood-card-header">
         <div className="blood-card-info">
           <span className="blood-id">#{bloodUnit.bloodId.toString()}</span>
@@ -127,120 +128,7 @@ function BloodCard({ bloodId }: { bloodId: bigint }) {
         </span>
       </div>
       {expanded && <BloodTimeline bloodId={bloodId} />}
-    </div>
-  );
-}
-
-// ==================== 积分显示组件 ====================
-
-function PointsDisplay() {
-  const { address } = useAccount();
-
-  const { data: points } = useReadContract({
-    abi: CONTRACT_ABI.abi,
-    address: CONTRACT_ADDRESS,
-    functionName: 'getPoints',
-    args: [address],
-    query: { enabled: !!address },
-  });
-
-  return (
-    <div className="points-display-section">
-      <div className="card-icon">💰</div>
-      <h2 className="card-title">我的积分</h2>
-      <div className="points-value">
-        <span className="points-number">{points ? points.toString() : '0'}</span>
-        <span className="points-unit">分</span>
-      </div>
-    </div>
-  );
-}
-
-// ==================== 排行榜组件 ====================
-
-function LeaderboardSection() {
-  const { data: leaderboardRaw, refetch, isLoading } = useReadContract({
-    abi: CONTRACT_ABI.abi,
-    address: CONTRACT_ADDRESS,
-    functionName: 'getLeaderboard',
-  });
-
-  const leaderboard = leaderboardRaw
-    ? (leaderboardRaw as [readonly string[], readonly bigint[]])[0].map((user: string, i: number) => ({
-        user,
-        points: (leaderboardRaw as [readonly string[], readonly bigint[]])[1][i],
-      }))
-    : [];
-
-  const getRankIcon = (index: number) => {
-    if (index === 0) return '🥇';
-    if (index === 1) return '🥈';
-    if (index === 2) return '🥉';
-    return `${index + 1}`;
-  };
-
-  const getRankClass = (index: number) => {
-    if (index === 0) return 'rank-gold';
-    if (index === 1) return 'rank-silver';
-    if (index === 2) return 'rank-bronze';
-    return '';
-  };
-
-  const shortAddress = (addr: string) => {
-    if (!addr) return '';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
-
-  return (
-    <div className="leaderboard-card">
-      <div className="card-header">
-        <div className="card-icon">🏆</div>
-        <h2 className="card-title">公益排行榜</h2>
-      </div>
-
-      {isLoading ? (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <div>加载中...</div>
-        </div>
-      ) : !leaderboard || leaderboard.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">📋</div>
-          <div>暂无排行榜数据</div>
-        </div>
-      ) : (
-        <div className="leaderboard-table-wrapper">
-          <table className="leaderboard-table">
-            <thead>
-              <tr>
-                <th>排名</th>
-                <th>地址</th>
-                <th>积分</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((item: { user: string; points: bigint }, index: number) => (
-                <tr key={index} className={getRankClass(index)}>
-                  <td className="rank-cell">
-                    <span className="rank-icon">{getRankIcon(index)}</span>
-                  </td>
-                  <td className="address-cell">
-                    <span className="address-text">{shortAddress(item.user)}</span>
-                  </td>
-                  <td className="points-cell">
-                    <span className="points-value">{item.points.toString()}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <button className="refresh-btn" onClick={() => refetch()}>
-        🔄 刷新榜单
-      </button>
-    </div>
+    </button>
   );
 }
 
@@ -276,14 +164,14 @@ function TransferSection() {
   return (
     <div className="transfer-card">
       <div className="card-header">
-        <div className="card-icon">💝</div>
+        <div className="card-icon"><Heart size={22} /></div>
         <h2 className="card-title">爱心转赠</h2>
       </div>
 
       <form onSubmit={handleTransfer} className="transfer-form">
         <div className="form-group">
           <label>
-            <span className="label-icon">👤</span>
+            <span className="label-icon"><User size={16} /></span>
             接收地址
           </label>
           <input
@@ -298,7 +186,7 @@ function TransferSection() {
 
         <div className="form-group">
           <label>
-            <span className="label-icon">💎</span>
+            <span className="label-icon"><Gem size={16} /></span>
             转赠积分
           </label>
           <input
@@ -318,22 +206,22 @@ function TransferSection() {
           disabled={!isConnected || isPending || !toAddress || !amount}
         >
           {isPending ? (
-            <><span className="btn-spinner"></span>转赠中...</>
+            <><span className="btn-spinner"></span>转赠中…</>
           ) : (
-            <><span className="btn-icon">💝</span>转赠积分</>
+            <><span className="btn-icon"><Heart size={16} /></span>转赠积分</>
           )}
         </button>
 
         {error && (
-          <div className="error">
-            <span className="error-icon">⚠️</span>
+          <div className="error" role="alert">
+            <span className="error-icon"><Alert size={16} /></span>
             错误: {error.message}
           </div>
         )}
 
         {transferReceipt.isSuccess && (
-          <div className="tx-success">
-            <span className="tx-icon">✅</span>
+          <div className="tx-success" aria-live="polite">
+            <span className="tx-icon"><CheckCircle size={16} /></span>
             转赠成功！
           </div>
         )}
@@ -350,7 +238,7 @@ function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, 
   isPending: boolean;
   userPoints: bigint | undefined;
   onRedeem: (id: bigint) => void;
-  getProductIcon: (index: number) => string;
+  getProductIcon: (index: number) => ReactNode;
 }) {
   const { data: product } = useReadContract({
     abi: CONTRACT_ABI.abi,
@@ -391,13 +279,13 @@ function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, 
         disabled={!isConnected || isPending || stock === 0n || (!!userPoints && userPoints < price)}
       >
         {isPending ? (
-          <><span className="btn-spinner"></span>兑换中...</>
+          <><span className="btn-spinner"></span>兑换中…</>
         ) : stock === 0n ? (
           '缺货'
         ) : userPoints && userPoints < price ? (
           '积分不足'
         ) : (
-          '🎁 兑换'
+          <><Gift size={16} /> 兑换</>
         )}
       </button>
     </div>
@@ -442,15 +330,12 @@ function ProductSection() {
     refetchPoints();
   }
 
-  const getProductIcon = (index: number) => {
-    const icons = ['🎁', '🛍️', '🎀', '⭐', '🎈', '🎯', '🎪', '🎭'];
-    return icons[index % icons.length];
-  };
+  const getProductIcon = (index: number) => productIcon(index);
 
   return (
     <div className="product-redemption-card">
       <div className="card-header">
-        <div className="card-icon">🛍️</div>
+        <div className="card-icon"><ShoppingBag size={22} /></div>
         <h2 className="card-title">商品兑换</h2>
         {userPoints !== undefined && (
           <div className="wallet-status" style={{ marginLeft: 'auto', marginTop: 0 }}>
@@ -461,7 +346,7 @@ function ProductSection() {
 
       {!nextProductId || nextProductId === 0n ? (
         <div className="empty-state">
-          <div className="empty-icon">📦</div>
+          <div className="empty-icon"><Package size={40} /></div>
           <div>暂无可兑换商品</div>
         </div>
       ) : (
@@ -482,14 +367,14 @@ function ProductSection() {
 
       {error && (
         <div className="error">
-          <span className="error-icon">⚠️</span>
+          <span className="error-icon"><Alert size={16} /></span>
           错误: {error.message}
         </div>
       )}
 
       {redeemReceipt.isSuccess && (
         <div className="tx-success">
-          <span className="tx-icon">✅</span>
+          <span className="tx-icon"><CheckCircle size={16} /></span>
           兑换成功！
         </div>
       )}
@@ -515,13 +400,13 @@ function BloodRecords() {
   return (
     <div className="blood-tracking-section">
       <div className="section-header">
-        <h2 className="section-title">🩸 我的献血记录</h2>
+        <h2 className="section-title"><Drop size={20} className="title-icon" /> 我的献血记录</h2>
         <button className="refresh-btn" onClick={() => refetch()}>刷新</button>
       </div>
       <div className="blood-list">
         {ids.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🩸</div>
+            <div className="empty-icon"><Drop size={40} /></div>
             <p>暂无献血记录</p>
             <p className="empty-hint">完成一次献血后，血液流转记录将显示在这里</p>
           </div>
@@ -538,25 +423,11 @@ function BloodRecords() {
 export default function DonorPanel() {
   return (
     <div className="donor-panel">
-      <section className="points-display-card">
-        <PointsDisplay />
-      </section>
+      <BloodRecords />
 
-      <section>
-        <BloodRecords />
-      </section>
+      <TransferSection />
 
-      <section className="leaderboard-card">
-        <LeaderboardSection />
-      </section>
-
-      <section className="transfer-card">
-        <TransferSection />
-      </section>
-
-      <section className="product-redemption-card">
-        <ProductSection />
-      </section>
+      <ProductSection />
     </div>
   );
 }
