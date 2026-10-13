@@ -200,22 +200,86 @@ body {
   align-items: center;
 }
 
-/* RainbowKit 按钮样式覆盖 */
-.connect-wrapper button {
-  background: rgba(255, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  color: white !important;
-  font-weight: 600 !important;
-  padding: 0.75rem 1.25rem !important;
-  border-radius: var(--radius-full) !important;
-  transition: var(--transition-normal) !important;
+/* ConnectKit 按钮在与导航栏同色深色头部中的微调 */
+.connect-wrapper :global(.ck-button, [class*="connectkit"]) button {
+  font-weight: 600;
 }
 
-.connect-wrapper button:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+.network-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-right: 0.75rem;
+  padding: 0.5rem 0.9rem;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 交易状态提示 */
+.tx-pending {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.7rem 1rem;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: var(--radius-md);
+  color: #1e40af;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.tx-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+
+.tx-link:hover {
+  color: #1e3a8a;
+}
+
+/* 角色权限提示 */
+.role-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: 0.7rem 1rem;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius-md);
+  color: #92400e;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.role-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  color: #15803d;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* 里程碑凭证哈希 */
+.node-evidence {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
 }
 
 /* ============================================

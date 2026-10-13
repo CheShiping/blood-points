@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useAccount } from 'wagmi';
+import { useWallet } from './wallet/WalletContext';
+import { IS_CONTRACT_CONFIGURED } from './config/contracts';
 import WalletConnect from './components/WalletConnect';
 import DonorPanel from './components/DonorPanel';
 import CollectorPanel from './components/CollectorPanel';
@@ -9,10 +10,10 @@ import PointsRing from './components/PointsRing';
 import { Syringe, Clipboard, Hospital, Trophy } from './components/icons';
 
 function App() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useWallet();
   const [activeSection, setActiveSection] = useState('home');
 
-  const shortAddress = (addr: string | undefined) => {
+  const shortAddress = (addr: string | null | undefined) => {
     if (!addr) return '';
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
@@ -47,12 +48,12 @@ function App() {
           <button type="button" className="feature-card" onClick={() => setActiveSection('collector')}>
             <div className="feature-icon"><Clipboard size={28} /></div>
             <h3>采集记录员</h3>
-            <p>录入献血信息，上传血液记录到链上</p>
+            <p>录入献血信息，上传凭证哈希到链上</p>
           </button>
           <button type="button" className="feature-card" onClick={() => setActiveSection('bloodbank')}>
             <div className="feature-icon"><Hospital size={28} /></div>
-            <h3>血站工作人员</h3>
-            <p>接收、检测血液，分配给病人</p>
+            <h3>血站 / 实验室 / 医院</h3>
+            <p>按角色接收、检测血液，分配给病人</p>
           </button>
           <button type="button" className="feature-card" onClick={() => setActiveSection('donor')}>
             <div className="feature-icon"><Trophy size={28} /></div>
@@ -71,8 +72,8 @@ function App() {
       {activeSection === 'home' && (
         <header className="app-header">
           <div className="header-text">
-            <h1>献血积分系统</h1>
-            <p>基于区块链的献血积分管理平台</p>
+            <h1>无偿献血公益透明追踪平台</h1>
+            <p>基于区块链的献血积分（ERC20）与血液旅程里程碑存证</p>
           </div>
           {isConnected && (
             <div className="wallet-status">
@@ -81,6 +82,12 @@ function App() {
             </div>
           )}
         </header>
+      )}
+
+      {!IS_CONTRACT_CONFIGURED && (
+        <div className="error" role="alert" style={{ margin: '12px 24px' }}>
+          合约地址尚未配置：请先按 README 部署合约，并在 src/config/contracts.ts 中填写地址
+        </div>
       )}
 
       <a href="#main-content" className="skip-link">跳转到主内容</a>
@@ -94,7 +101,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>献血积分系统 &copy; 2026 | 基于区块链技术</p>
+        <p>无偿献血公益透明追踪平台 &copy; 2026 | 教学模拟项目 · 仅部署 Sepolia 测试网</p>
       </footer>
     </div>
   );

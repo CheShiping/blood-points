@@ -4,18 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-BloodPoints (热血链) is a blockchain-based blood donation points DApp on Sepolia testnet. Users connect a wallet, "donate blood" to earn 100 on-chain points per donation, view a leaderboard, transfer points, redeem products, and track blood donation journeys. Deployed contract: `0x762a3de172619d3f7879d033966d31081a426aa2`.
+热血链 (BloodPoints) is a blockchain-based blood-donation public-welfare transparency DApp on Sepolia testnet (course final project; adapted from reference topic 8 "公益捐赠透明追踪平台"). Users connect a wallet (MetaMask via ethers.js), donate blood to earn 100 ERC20 points (BPT) per donation, view a leaderboard, transfer points, redeem products, and track blood donation journeys through a milestone state machine with IPFS evidence hashes. Deployed contracts (Sepolia): BloodPoints `0x915b9e172d2905dc326c83739db040e08916390c`, BloodPointToken `0x2c837224dd03b36910871c7f32f2dca8d2b0e9c0` (deployer/admin `0x60780f39004283358d1d82820966f57104b2827f`).
 
 ## Commands
 
 ### Smart Contracts (root directory)
 ```bash
 npx hardhat compile                              # Compile contracts
-npx hardhat test                                 # Run tests (Node test runner, test/*.ts)
-npx hardhat test solidity                        # Run Foundry-style Solidity tests (.t.sol)
-npx hardhat run scripts/deploy.ts                # Deploy locally
+npx hardhat test                                 # Run tests (Node test runner, test/*.ts, 52 tests)
+npx hardhat run scripts/deploy.ts                # Deploy locally (token + platform + minter handover + sample products)
 npx hardhat run scripts/deploy-sepolia.ts        # Deploy to Sepolia
-npx hardhat run scripts/export-abi.ts            # Export ABI from artifacts/ to frontend/src/contracts/
+npx hardhat run scripts/export-abi.ts            # Export both ABIs from artifacts/ to frontend/src/contracts/
 ```
 
 ### Frontend (from `frontend/` directory)
@@ -30,57 +29,69 @@ npm run preview   # Preview production build
 
 ### Two-Package Layout
 - **Root** — Hardhat 3 project (ESM, `"type": "module"`). Solidity 0.8.28, OpenZeppelin 5.6.1, `@nomicfoundation/hardhat-toolbox-viem`.
-- **`frontend/`** — React 19 + TypeScript 6 + Vite 8 SPA. Separate `package.json` with its own dependencies.
+- **`frontend/`** — React 19 + TypeScript 6 + Vite 8 SPA. Separate `package.json` with its own dependencies. **ethers.js v6** for all chain interaction (no wagmi/viem/RainbowKit).
 
-### Smart Contract: `contracts/BloodPoints.sol`
-Inherits `Ownable` + `ReentrancyGuard` (OpenZeppelin). Owner-only `addNewProduct()` for product management.
+### Smart Contracts
 
-Key state: `userPoints` mapping, `products` mapping, `allDonors` array, `isDonor` mapping, `nextProductId` counter.
+**`contracts/BloodPointToken.sol`** — ERC20 points token (OZ `ERC20` + `Ownable` + `Pausable`), symbol BPT, 0 decimals. `mint`/`burnFrom` restricted to `minter` (the BloodPoints platform contract); owner can `setMinter`/`pause`/`unpause`.
 
-Core functions: `donateBlood(bloodType, volume)` (100 pts), `transferPoints(to, amount)`, `redeemProduct(productId)`, `getLeaderboard()` (bubble sort — gas-inefficient at scale), `getPoints(user)`, `getProduct(id)`, `getDonorCount()`.
-Blood tracking: `receiveBlood(id, bank)`, `testBlood(id, passed)`, `assignToPatient(id, patient)` (all onlyOwner), `getBloodUnit(id)`, `getBloodTransfers(id)`, `getDonorBloods(donor)`, `getPatientBloods(patient)`, `getBloodJourney(id)`.
+**`contracts/BloodPoints.sol`** — main platform contract (`AccessControl` + `Pausable` + `ReentrancyGuard`). Roles: `DEFAULT_ADMIN_ROLE`, `COLLECTOR_ROLE`, `BLOOD_BANK_ROLE`, `LAB_ROLE`, `HOSPITAL_ROLE`.
 
-Events: `PointsAwarded`, `ProductRedeemed`, `PointsTransferred`, `BloodCreated`, `BloodReceived`, `BloodTested`, `BloodAssigned`.
+Key state: `pointsToken` (IERC20), `products`, `nextProductId`, `allDonors`, `isDonor`, `bloodUnits`, `_bloodMilestones` (Milestone[] per bloodId), `donorBloodIds`, `patientBloodIds`, `nextBloodId`, `_bloodIdsByType`, `_allBloodIds`.
+
+Core functions: `donateBlood(bloodType, volume)` (mints 100 BPT), `recordBlood(donor, bloodType, volume, evidence)` (COLLECTOR_ROLE), `receiveBlood(id, bank, evidence)` (BLOOD_BANK_ROLE), `testBlood(id, passed, evidence)` (LAB_ROLE), `assignToPatient(id, patient, evidence)` (HOSPITAL_ROLE), `redeemProduct(id)` (CEI + nonReentrant, burns BPT), `getLeaderboard()`, `getPoints(user)`, `getProduct(id)`, `getDonorCount()`.
+Blood journey: `getMilestones(id)`, `getBloodJourney(id)`, `getBloodUnit(id)`, `getDonorBloods(donor)`, `getPatientBloods(patient)`, `getBloodsByType`, `getBloodsByStatus`, `getAllBloodIds()`.
+
+`Milestone` struct: `{ BloodStatus stage; address operator; string location; string evidence /*IPFS CID*/; uint256 timestamp }`. `BloodStatus` enum: `Donated, Received, Tested, Assigned`.
+
+Events: `PointsAwarded`, `MilestoneRecorded`, `BloodCreated`, `BloodReceived`, `BloodTested`, `BloodAssigned`, `ProductAdded`, `ProductRedeemed`, `PointsTokenUpdated`.
 
 ### Frontend Provider Chain
-`main.tsx`: `WagmiProvider` → `QueryClientProvider` → `RainbowKitProvider` (red accent) → `App`
+`main.tsx`: `WagmiProvider` → `QueryClientProvider` → `ConnectKitProvider` → `WalletProvider` → `App`
 
-- **wagmi config** (`src/config/wagmi.ts`): Sepolia only, injected connector, Alchemy RPC transport.
-- **Contract ABI** (`src/contracts/BloodPoints.json`): exported from Hardhat artifacts via `scripts/export-abi.ts`.
-- **Contract config** (`src/contracts/config.ts`): re-exports `CONTRACT_ADDRESS` + `CONTRACT_ABI`.
+- **Wallet connection**: ConnectKit (`ConnectKitButton`) on wagmi/viem; config in `src/config/wagmi.ts` (Sepolia + injected connector, RPC from `VITE_SEPOLIA_RPC_URL`).
+- **Wallet bridge** (`src/wallet/WalletContext.tsx`): account/chainId/isConnected from wagmi `useAccount`; ethers `Signer` derived from the active connector's EIP-1193 provider; `JsonRpcProvider` read fallback for view calls.
+- **Contract layer** (`src/hooks/useContract.ts`): `useContractRead` (view calls via read provider), `useTx` (write state machine: signing/confirming/success/error + Etherscan link) — all contract reads/writes use **ethers.js**.
+- **Contract config** (`src/config/contracts.ts`): addresses (placeholders until deployed), ABIs, role hashes (`keccak256("ROLE_NAME")` via `ethers.id`), `TX_GAS_LIMIT = 300000n`.
+- **Contract ABIs** (`src/contracts/BloodPoints.json`, `BloodPointToken.json`): exported from Hardhat artifacts via `scripts/export-abi.ts`.
 
 ### Frontend Components (`src/components/`, all `.tsx`)
 | Component | Contract Interaction |
 |---|---|
-| `WalletConnect.tsx` | RainbowKit `ConnectButton` in sticky navbar |
-| `BloodDonation.tsx` | `useReadContract` for points, `useWriteContract` for `donateBlood()` |
+| `WalletConnect.tsx` | ConnectKit `ConnectKitButton` + network warning (wagmi `useSwitchChain`) + nav |
+| `DonorPanel.tsx` | `donateBlood`, `getDonorBloods`/`getBloodJourney` timeline, ERC20 `transfer`, `redeemProduct` |
+| `CollectorPanel.tsx` | `recordBlood` with evidence CID input + `hasRole` check |
+| `BloodBankPanel.tsx` | `receiveBlood`/`testBlood`/`assignToPatient` (role-separated) + `getBloodsByType` |
 | `Leaderboard.tsx` | `getLeaderboard()` → decode `(address[], uint256[])` tuple |
-| `TransferPoints.tsx` | `transferPoints(address, uint256)` |
-| `ProductRedemption.tsx` | Iterates `getProduct(0..N)`, calls `redeemProduct(id)` |
-| `BloodTracking.tsx` | Blood journey cards, timeline visualization, one-click simulation panel |
+| `PointsRing.tsx` | `getPoints(address)` |
+| `TxFeedback.tsx` | Tx status UI (pending/success/error + Etherscan link) |
 
 ### Styling
-All styles in `src/index.css` (~1082 lines, CSS custom properties, animations). `App.css` is unused Vite template leftover.
+All styles in `src/index.css` (~1200 lines, CSS custom properties, animations). `App.css` is unused Vite template leftover.
 
 ## Hardhat 3 Notes
-This project uses **Hardhat 3** (`defineConfig` API, not legacy `module.exports`). The `hardhat-toolbox-viem` plugin provides viem-based test helpers. Solidity tests use `forge-std`. Two config profiles: `default` (no optimizer) and `production` (optimizer, 200 runs).
+This project uses **Hardhat 3** (`defineConfig` API, not legacy `module.exports`). The `hardhat-toolbox-viem` plugin provides viem-based test helpers. Solidity tests use `forge-std` (none currently). Two config profiles: `default` (no optimizer) and `production` (optimizer, 200 runs).
 
 ## Sepolia Deployment Gotchas
-- All frontend `writeContract` calls need `gas: 300000n` — Sepolia rejects default estimated gas limits.
+- All frontend write calls need explicit `gasLimit: 300000n` — Sepolia rejects default estimated gas limits.
 - Behind a proxy? Set `HTTP_PROXY`/`HTTPS_PROXY` env vars before deploying: `$env:HTTPS_PROXY="http://127.0.0.1:7890"`.
-- After redeploying, update `frontend/src/contracts/config.ts` with the new address AND run `export-abi.ts`.
+- `.env` uses `SEPOLIA_RPC_URL` + `DEPLOYER_PRIVATE_KEY` + `ETHERSCAN_API_KEY` (matches `.env.example`).
+- After redeploying, update `frontend/src/config/contracts.ts` with BOTH new addresses (platform + token) AND run `export-abi.ts`.
+- Deploy order matters: BloodPointToken (minter = deployer) → BloodPoints → `token.setMinter(platform)` → `addNewProduct` sample products.
 
 ## Testing Notes
-- BloodPoints constructor requires `address initialOwner` (OpenZeppelin v5): `viem.deployContract("BloodPoints", [owner.account.address])`.
+- Deploy both contracts in tests: `token = deployContract("BloodPointToken", [admin, admin])`, `platform = deployContract("BloodPoints", [admin, token.address])`, then `token.write.setMinter([platform.address])`.
+- Grant roles via AccessControl: `platform.write.grantRole([keccak256(toBytes("COLLECTOR_ROLE")), account])`.
+- OZ v5 uses custom errors: AccessControl revert is `AccessControlUnauthorizedAccount` (not a string), pause revert is `EnforcedPause`, ownable revert matches `/Ownable/`. Match those in `assert.rejects`.
 - Solidity returns lowercase addresses; viem returns EIP-55 checksummed. Use `.toLowerCase()` on both sides when comparing.
-- `getProduct()` returns a named tuple decoded as an array by viem — destructure: `const [name, price, , stock] = product`.
+- `getProduct()` returns a named tuple decoded as an array by viem — destructure: `const [id, name, price, stock] = product`.
 
 ## Known Issues
-- **31 contract tests** in `test/BloodPoints.ts` covering points, blood tracking, state machine, access control, and products.
-- **ABI mismatch risk** — after contract redeployment, run `npx hardhat run scripts/export-abi.ts` from root to regenerate `frontend/src/contracts/BloodPoints.json`.
-- **Hardcoded Alchemy key** in `frontend/src/config/wagmi.ts` — should use `import.meta.env`.
-- **No frontend test framework** configured.
+- **52 contract tests** in `test/BloodPoints.ts` (37) + `test/BloodPointToken.ts` (15) covering points/ERC20, blood tracking, milestone state machine, access control, pause, and products.
+- **Deployed to Sepolia (2026-10-13)**: BloodPoints `0x915b9e172d2905dc326c83739db040e08916390c`, BloodPointToken `0x2c837224dd03b36910871c7f32f2dca8d2b0e9c0`. Source verified on Etherscan + Sourcify. Business roles (COLLECTOR/BLOOD_BANK/LAB/HOSPITAL) still need granting via `scripts/assign-roles.ts`.
+- **ABI mismatch risk** — after contract redeployment, run `npx hardhat run scripts/export-abi.ts` from root to regenerate both `frontend/src/contracts/*.json`.
 - **On-chain bubble sort** in `getLeaderboard()` — gas-inefficient for large donor lists.
+- **No frontend test framework** configured.
 
 ## Agent Workflow
 

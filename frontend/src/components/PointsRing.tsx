@@ -1,18 +1,16 @@
-import { useAccount, useReadContract } from 'wagmi';
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
+import { useWallet } from '../wallet/WalletContext';
+import { useContractRead } from '../hooks/useContract';
 import { Trophy } from './icons';
 
 const RING_TARGET = 1000; // 圆环里程碑目标积分
 
 export default function PointsRing() {
-  const { address, isConnected } = useAccount();
-  const { data: points } = useReadContract({
-    abi: CONTRACT_ABI.abi,
-    address: CONTRACT_ADDRESS,
-    functionName: 'getPoints',
-    args: [address],
-    query: { enabled: !!address },
-  });
+  const { address, isConnected } = useWallet();
+
+  const { data: points } = useContractRead<bigint>(
+    (contract) => contract.getPoints(address!),
+    [address]
+  );
 
   const value = points ? Number(points) : 0;
   const pct = Math.min(value / RING_TARGET, 1);
@@ -25,7 +23,7 @@ export default function PointsRing() {
     <div className="points-ring-card">
       <div className="card-header">
         <div className="card-icon"><Trophy size={22} /></div>
-        <h2 className="card-title">我的积分</h2>
+        <h2 className="card-title">我的积分（BPT）</h2>
       </div>
 
       <div className="ring-wrap">
@@ -33,9 +31,7 @@ export default function PointsRing() {
           <circle className="ring-track" cx="90" cy="90" r={R} />
           <circle
             className="ring-fill"
-            cx="90"
-            cy="90"
-            r={R}
+            cx="90" cy="90" r={R}
             strokeDasharray={C}
             strokeDashoffset={offset}
           />

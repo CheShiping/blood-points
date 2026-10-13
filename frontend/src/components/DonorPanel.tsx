@@ -1,7 +1,20 @@
 import { useState, type ReactNode } from 'react';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
-import { Drop, Gem, Heart, User, ShoppingBag, Package, Alert, CheckCircle, Syringe, Hospital, Gift, getProductIcon as productIcon } from './icons';
+import { useWallet } from '../wallet/WalletContext';
+import {
+  useContractRead,
+  useTx,
+  TX_GAS_LIMIT,
+  getBloodPointsContract,
+  getTokenContract,
+} from '../hooks/useContract';
+import {
+  Drop, Gem, Heart, User, ShoppingBag, Package,
+  Syringe, Hospital, Gift, getProductIcon as productIcon,
+} from './icons';
+import TxFeedback from './TxFeedback';
+
+const BLOOD_TYPES = ['A', 'B', 'AB', 'O'] as const;
+const VOLUMES = [200, 300, 400] as const;
 
 const STATUS_LABELS: Record<number, { text: string; className: string }> = {
   0: { text: '已献血', className: 'status-donated' },
@@ -23,64 +36,150 @@ interface BloodUnitData {
   assignedAt: bigint;
 }
 
-interface BloodTransferData {
-  bloodBank: string;
-  receivedAt: bigint;
-  transferredAt: bigint;
+interface MilestoneData {
+  stage: number;
+  operator: string;
+  location: string;
+  evidence: string;
+  timestamp: bigint;
+}
+
+const formatTime = (ts: bigint) => {
+  if (ts === 0n) return '—';
+  return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(Number(ts) * 1000));
+};
+
+const shortAddr = (addr: string) => {
+  if (!addr || addr === '0x0000000000000000000000000000000000000000') return '未分配';
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+};
+
+const shortEvidence = (cid: string) => {
+  if (!cid) return '—';
+  return cid.length > 18 ? `${cid.slice(0, 10)}…${cid.slice(-6)}` : cid;
+};
+
+// ==================== 献血获取积分 ====================
+
+function DonateSection() {
+  const { isConnected } = useWallet();
+  const { status, hash, error, run } = useTx();
+  const [bloodType, setBloodType] = useState<string>('A');
+  const [volume, setVolume] = useState<number>(300);
+
+  const busy = status === 'signing' || status === 'confirming';
+
+  const handleDonate = () => {
+    run(async (signer) => {
+      const contract = getBloodPointsContract(signer);
+      return contract.donateBlood(bloodType, BigInt(volume), { gasLimit: TX_GAS_LIMIT });
+    });
+  };
+
+  return (
+    <div className="blood-donation-card">
+      <div className="card-header">
+        <div className="card-icon"><Drop size={22} /></div>
+        <h2 className="card-title">献血获取积分</h2>
+      </div>
+
+      <div className="card-content">
+        <p className="section-desc">每次献血可获得 100 BPT 积分（ERC20 代币），并创建血液追踪记录</p>
+
+        <div className="donation-form">
+          <div className="form-row">
+            <label className="form-label">血型</label>
+            <div className="blood-type-selector">
+              {BLOOD_TYPES.map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  className={`type-btn ${bloodType === type ? 'active' : ''}`}
+                  onClick={() => setBloodType(type)}
+                  disabled={busy}
+                >
+                  {type}型
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-row">
+            <label className="form-label">献血量 (ml)</label>
+            <div className="volume-selector">
+              {VOLUMES.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={`volume-btn ${volume === v ? 'active' : ''}`}
+                  onClick={() => setVolume(v)}
+                  disabled={busy}
+                >
+                  {v}ml
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <button className="donate-btn" onClick={handleDonate} disabled={!isConnected || busy}>
+          {busy ? (
+            <><span className="btn-spinner"></span>处理中…</>
+          ) : (
+            <><span className="btn-icon"><Heart size={16} /></span>献血获取 100 积分</>
+          )}
+        </button>
+
+        <TxFeedback
+          status={status}
+          hash={hash}
+          error={error}
+          successMessage="献血成功！已获得 100 积分，血液记录已上链"
+        />
+      </div>
+    </div>
+  );
 }
 
 // ==================== 血液时间线组件 ====================
 
 function BloodTimeline({ bloodId }: { bloodId: bigint }) {
-  const { data: journey } = useReadContract({
-    abi: CONTRACT_ABI.abi,
-    address: CONTRACT_ADDRESS,
-    functionName: 'getBloodJourney',
-    args: [bloodId],
-  });
+  const { data: journey, reload } = useContractRead<[BloodUnitData, MilestoneData[]]>(
+    (contract) => contract.getBloodJourney(bloodId),
+    [bloodId]
+  );
 
   if (!journey) return null;
 
-  const [unit, transfers] = journey as [BloodUnitData, BloodTransferData[]];
-
-  const formatTime = (ts: bigint) => {
-    if (ts === 0n) return '—';
-    return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(Number(ts) * 1000));
-  };
-
-  const shortAddr = (addr: string) => {
-    if (!addr || addr === '0x0000000000000000000000000000000000000000') return '未分配';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
+  const [unit, milestones] = journey;
 
   return (
     <div className="blood-timeline">
       <div className="timeline-title">
         <Drop size={16} /> 血液 #{unit.bloodId.toString()} ({unit.bloodType}型, {unit.volume.toString()}ml)
+        <button className="refresh-btn" onClick={reload}>刷新</button>
       </div>
       <div className="timeline-nodes">
-        <div className="timeline-node active">
-          <div className="node-icon"><Syringe size={20} /></div>
-          <div className="node-content">
-            <div className="node-label">献血者</div>
-            <div className="node-value">{shortAddr(unit.donor)}</div>
-            <div className="node-time">{formatTime(unit.donatedAt)}</div>
-          </div>
-        </div>
-
-        {transfers.map((transfer, i) => (
-          <div key={i} className={`timeline-node ${i === transfers.length - 1 && unit.status < 3 ? 'current' : 'active'}`}>
-            <div className="node-connector">→</div>
-            <div className="node-icon"><Hospital size={20} /></div>
-            <div className="node-content">
-              <div className="node-label">{transfer.bloodBank}</div>
-              <div className="node-value">接收: {formatTime(transfer.receivedAt)}</div>
-              {transfer.transferredAt > 0n && (
-                <div className="node-time">转出: {formatTime(transfer.transferredAt)}</div>
-              )}
+        {milestones.map((m, i) => {
+          const isCurrent = i === milestones.length - 1 && unit.status < 3;
+          return (
+            <div key={i} className={`timeline-node ${isCurrent ? 'current' : 'active'}`}>
+              {i > 0 && <div className="node-connector">→</div>}
+              <div className="node-icon">
+                {m.stage === 0 && <Syringe size={20} />}
+                {m.stage === 1 && <Hospital size={20} />}
+                {m.stage === 2 && <Syringe size={20} />}
+                {m.stage === 3 && <Hospital size={20} />}
+              </div>
+              <div className="node-content">
+                <div className="node-label">{STATUS_LABELS[m.stage]?.text ?? '未知'} · {m.location}</div>
+                <div className="node-value">操作人: {shortAddr(m.operator)}</div>
+                <div className="node-evidence">凭证: {shortEvidence(m.evidence)}</div>
+                <div className="node-time">{formatTime(m.timestamp)}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {unit.status === 3 && (
           <div className="timeline-node active">
@@ -103,25 +202,22 @@ function BloodTimeline({ bloodId }: { bloodId: bigint }) {
 function BloodCard({ bloodId }: { bloodId: bigint }) {
   const [expanded, setExpanded] = useState(false);
 
-  const { data: unit } = useReadContract({
-    abi: CONTRACT_ABI.abi,
-    address: CONTRACT_ADDRESS,
-    functionName: 'getBloodUnit',
-    args: [bloodId],
-  });
+  const { data: unit } = useContractRead<BloodUnitData>(
+    (contract) => contract.getBloodUnit(bloodId),
+    [bloodId]
+  );
 
   if (!unit) return null;
 
-  const bloodUnit = unit as unknown as BloodUnitData;
-  const statusInfo = STATUS_LABELS[bloodUnit.status] || { text: '未知', className: '' };
+  const statusInfo = STATUS_LABELS[unit.status] || { text: '未知', className: '' };
 
   return (
     <button type="button" className="blood-card" onClick={() => setExpanded(!expanded)}>
       <div className="blood-card-header">
         <div className="blood-card-info">
-          <span className="blood-id">#{bloodUnit.bloodId.toString()}</span>
-          <span className="blood-type">{bloodUnit.bloodType}型</span>
-          <span className="blood-volume">{bloodUnit.volume.toString()}ml</span>
+          <span className="blood-id">#{unit.bloodId.toString()}</span>
+          <span className="blood-type">{unit.bloodType}型</span>
+          <span className="blood-volume">{unit.volume.toString()}ml</span>
         </div>
         <span className={`status-badge ${statusInfo.className}`}>
           {statusInfo.text}
@@ -132,43 +228,38 @@ function BloodCard({ bloodId }: { bloodId: bigint }) {
   );
 }
 
-// ==================== 积分转赠组件 ====================
+// ==================== 积分转赠组件（ERC20 transfer） ====================
 
 function TransferSection() {
-  const { isConnected } = useAccount();
+  const { isConnected } = useWallet();
+  const { status, hash, error, run } = useTx();
   const [toAddress, setToAddress] = useState('');
   const [amount, setAmount] = useState('');
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const transferReceipt = useWaitForTransactionReceipt({ hash });
 
-  const handleTransfer = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const busy = status === 'signing' || status === 'confirming';
+
+  const handleTransfer = () => {
     if (!toAddress || !amount) return;
-    try {
-      await writeContract({
-        abi: CONTRACT_ABI.abi,
-        address: CONTRACT_ADDRESS,
-        functionName: 'transferPoints',
-        args: [toAddress, BigInt(amount)],
-      });
-    } catch (err) {
-      console.error('Transfer failed:', err);
-    }
+    run(async (signer) => {
+      const contract = getTokenContract(signer);
+      return contract.transfer(toAddress, BigInt(amount), { gasLimit: TX_GAS_LIMIT });
+    });
   };
-
-  if (transferReceipt.isSuccess && toAddress) {
-    setToAddress('');
-    setAmount('');
-  }
 
   return (
     <div className="transfer-card">
       <div className="card-header">
         <div className="card-icon"><Heart size={22} /></div>
-        <h2 className="card-title">爱心转赠</h2>
+        <h2 className="card-title">爱心转赠（BPT）</h2>
       </div>
 
-      <form onSubmit={handleTransfer} className="transfer-form">
+      <form
+        className="transfer-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleTransfer();
+        }}
+      >
         <div className="form-group">
           <label>
             <span className="label-icon"><User size={16} /></span>
@@ -180,7 +271,7 @@ function TransferSection() {
             placeholder="0x..."
             value={toAddress}
             onChange={(e) => setToAddress(e.target.value)}
-            disabled={!isConnected}
+            disabled={!isConnected || busy}
           />
         </div>
 
@@ -195,7 +286,7 @@ function TransferSection() {
             placeholder="输入积分数量"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            disabled={!isConnected}
+            disabled={!isConnected || busy}
             min="1"
           />
         </div>
@@ -203,28 +294,16 @@ function TransferSection() {
         <button
           type="submit"
           className="transfer-btn"
-          disabled={!isConnected || isPending || !toAddress || !amount}
+          disabled={!isConnected || busy || !toAddress || !amount}
         >
-          {isPending ? (
+          {busy ? (
             <><span className="btn-spinner"></span>转赠中…</>
           ) : (
             <><span className="btn-icon"><Heart size={16} /></span>转赠积分</>
           )}
         </button>
 
-        {error && (
-          <div className="error" role="alert">
-            <span className="error-icon"><Alert size={16} /></span>
-            错误: {error.message}
-          </div>
-        )}
-
-        {transferReceipt.isSuccess && (
-          <div className="tx-success" aria-live="polite">
-            <span className="tx-icon"><CheckCircle size={16} /></span>
-            转赠成功！
-          </div>
-        )}
+        <TxFeedback status={status} hash={hash} error={error} successMessage="转赠成功！" />
       </form>
     </div>
   );
@@ -232,33 +311,30 @@ function TransferSection() {
 
 // ==================== 商品兑换组件 ====================
 
-function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, getProductIcon }: {
+function ProductCard({ productId, isConnected, busy, userPoints, onRedeem, getProductIcon: getIcon }: {
   productId: number;
   isConnected: boolean;
-  isPending: boolean;
+  busy: boolean;
   userPoints: bigint | undefined;
   onRedeem: (id: bigint) => void;
   getProductIcon: (index: number) => ReactNode;
 }) {
-  const { data: product } = useReadContract({
-    abi: CONTRACT_ABI.abi,
-    address: CONTRACT_ADDRESS,
-    functionName: 'getProduct',
-    args: [BigInt(productId)],
-  });
+  const { data: product } = useContractRead<[bigint, string, bigint, bigint]>(
+    (contract) => contract.getProduct(BigInt(productId)),
+    [productId]
+  );
 
-  if (!product || (product as readonly [bigint, string, bigint, bigint])[2] === 0n) return null;
+  if (!product || product[2] === 0n) return null;
 
-  const productData = product as readonly [bigint, string, bigint, bigint];
-  const id = productData[0];
-  const name = productData[1];
-  const price = productData[2];
-  const stock = productData[3];
+  const id = product[0];
+  const name = product[1];
+  const price = product[2];
+  const stock = product[3];
 
   return (
     <div className="product-card">
       <div className="product-card-header">
-        <div className="product-icon">{getProductIcon(productId)}</div>
+        <div className="product-icon">{getIcon(productId)}</div>
         <div className="product-name">{name}</div>
       </div>
       <div className="product-details">
@@ -276,9 +352,9 @@ function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, 
       <button
         className="redeem-btn"
         onClick={() => onRedeem(id)}
-        disabled={!isConnected || isPending || stock === 0n || (!!userPoints && userPoints < price)}
+        disabled={!isConnected || busy || stock === 0n || (!!userPoints && userPoints < price)}
       >
-        {isPending ? (
+        {busy ? (
           <><span className="btn-spinner"></span>兑换中…</>
         ) : stock === 0n ? (
           '缺货'
@@ -293,53 +369,42 @@ function ProductCard({ productId, isConnected, isPending, userPoints, onRedeem, 
 }
 
 function ProductSection() {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected } = useWallet();
+  const { status, hash, error, run } = useTx();
 
-  const { data: nextProductId, refetch: refetchProducts } = useReadContract({
-    abi: CONTRACT_ABI.abi,
-    address: CONTRACT_ADDRESS,
-    functionName: 'nextProductId',
-  });
+  const { data: nextProductId, reload: reloadProducts } = useContractRead<bigint>(
+    (contract) => contract.nextProductId(),
+    []
+  );
 
-  const { data: userPoints, refetch: refetchPoints } = useReadContract({
-    abi: CONTRACT_ABI.abi,
-    address: CONTRACT_ADDRESS,
-    functionName: 'getPoints',
-    args: [address],
-    query: { enabled: !!address },
-  });
+  const { data: userPoints, reload: reloadPoints } = useContractRead<bigint>(
+    (contract) => contract.getPoints(address!),
+    [address]
+  );
 
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
-  const redeemReceipt = useWaitForTransactionReceipt({ hash });
-
-  const handleRedeem = async (productId: bigint) => {
-    try {
-      await writeContract({
-        abi: CONTRACT_ABI.abi,
-        address: CONTRACT_ADDRESS,
-        functionName: 'redeemProduct',
-        args: [productId],
-      });
-    } catch (err) {
-      console.error('Redemption failed:', err);
-    }
+  const handleRedeem = (productId: bigint) => {
+    run(async (signer) => {
+      const contract = getBloodPointsContract(signer);
+      return contract.redeemProduct(productId, { gasLimit: TX_GAS_LIMIT });
+    });
   };
 
-  if (redeemReceipt.isSuccess) {
-    refetchProducts();
-    refetchPoints();
+  if (status === 'success') {
+    reloadProducts();
+    reloadPoints();
   }
 
-  const getProductIcon = (index: number) => productIcon(index);
+  const getIcon = (index: number) => productIcon(index);
+  const busy = status === 'signing' || status === 'confirming';
 
   return (
     <div className="product-redemption-card">
       <div className="card-header">
         <div className="card-icon"><ShoppingBag size={22} /></div>
         <h2 className="card-title">商品兑换</h2>
-        {userPoints !== undefined && (
+        {userPoints != null && (
           <div className="wallet-status" style={{ marginLeft: 'auto', marginTop: 0 }}>
-            <span className="status-text">当前积分: {(userPoints as bigint).toString()}</span>
+            <span className="status-text">当前积分: {userPoints.toString()}</span>
           </div>
         )}
       </div>
@@ -356,28 +421,16 @@ function ProductSection() {
               key={i}
               productId={i}
               isConnected={isConnected}
-              isPending={isPending}
-              userPoints={userPoints as bigint | undefined}
+              busy={busy}
+              userPoints={userPoints ?? undefined}
               onRedeem={handleRedeem}
-              getProductIcon={getProductIcon}
+              getProductIcon={getIcon}
             />
           ))}
         </div>
       )}
 
-      {error && (
-        <div className="error">
-          <span className="error-icon"><Alert size={16} /></span>
-          错误: {error.message}
-        </div>
-      )}
-
-      {redeemReceipt.isSuccess && (
-        <div className="tx-success">
-          <span className="tx-icon"><CheckCircle size={16} /></span>
-          兑换成功！
-        </div>
-      )}
+      <TxFeedback status={status} hash={hash} error={error} successMessage="兑换成功！积分已销毁" />
     </div>
   );
 }
@@ -385,23 +438,21 @@ function ProductSection() {
 // ==================== 献血记录列表 ====================
 
 function BloodRecords() {
-  const { address } = useAccount();
+  const { address } = useWallet();
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const { data: bloodIds, refetch } = useReadContract({
-    abi: CONTRACT_ABI.abi,
-    address: CONTRACT_ADDRESS,
-    functionName: 'getDonorBloods',
-    args: [address],
-    query: { enabled: !!address },
-  });
+  const { data: bloodIds } = useContractRead<bigint[]>(
+    (contract) => contract.getDonorBloods(address!),
+    [address, refreshKey]
+  );
 
-  const ids = (bloodIds as bigint[] | undefined) ?? [];
+  const ids = bloodIds ?? [];
 
   return (
     <div className="blood-tracking-section">
       <div className="section-header">
         <h2 className="section-title"><Drop size={20} className="title-icon" /> 我的献血记录</h2>
-        <button className="refresh-btn" onClick={() => refetch()}>刷新</button>
+        <button className="refresh-btn" onClick={() => setRefreshKey((k) => k + 1)}>刷新</button>
       </div>
       <div className="blood-list">
         {ids.length === 0 ? (
@@ -423,6 +474,8 @@ function BloodRecords() {
 export default function DonorPanel() {
   return (
     <div className="donor-panel">
+      <DonateSection />
+
       <BloodRecords />
 
       <TransferSection />

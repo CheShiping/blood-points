@@ -1,24 +1,15 @@
-
-import { useReadContract } from 'wagmi';
-import { CONTRACT_ABI, CONTRACT_ADDRESS } from '../contracts/config';
+import { useContractRead } from '../hooks/useContract';
 import { Trophy, ClipboardList, Refresh } from './icons';
 
 export default function Leaderboard() {
-  const { data: leaderboardRaw, refetch, isLoading } = useReadContract({
-    abi: CONTRACT_ABI.abi,
-    address: CONTRACT_ADDRESS,
-    functionName: 'getLeaderboard',
-  });
+  const { data: leaderboardRaw, loading, reload } = useContractRead<[string[], bigint[]]>(
+    (contract) => contract.getLeaderboard(),
+    []
+  );
 
-  // getLeaderboard() returns (address[] donors, uint256[] points) as a tuple
-  // wagmi decodes this as [address[], uint256[]]
-  const leaderboard = leaderboardRaw
-    ? (leaderboardRaw as [readonly string[], readonly bigint[]])[0].map((user: string, i: number) => ({ user, points: (leaderboardRaw as [readonly string[], readonly bigint[]])[1][i] }))
+  const leaderboard: { user: string; points: bigint }[] = leaderboardRaw
+    ? leaderboardRaw[0].map((user, i) => ({ user, points: leaderboardRaw[1][i] }))
     : [];
-
-  const getRankIcon = (index: number) => {
-    return `${index + 1}`;
-  };
 
   const getRankClass = (index: number) => {
     if (index === 0) return 'rank-gold';
@@ -39,12 +30,12 @@ export default function Leaderboard() {
         <h2 className="card-title">公益排行榜</h2>
       </div>
 
-      {isLoading ? (
+      {loading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
           <div>加载中…</div>
         </div>
-      ) : !leaderboard || leaderboard.length === 0 ? (
+      ) : leaderboard.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon"><ClipboardList size={40} /></div>
           <div>暂无排行榜数据</div>
@@ -60,10 +51,10 @@ export default function Leaderboard() {
               </tr>
             </thead>
             <tbody>
-              {leaderboard.map((item: { user: string; points: bigint }, index: number) => (
+              {leaderboard.map((item, index) => (
                 <tr key={index} className={getRankClass(index)}>
                   <td className="rank-cell">
-                    <span className="rank-icon">{getRankIcon(index)}</span>
+                    <span className="rank-icon">{index + 1}</span>
                   </td>
                   <td className="address-cell">
                     <span className="avatar">{item.user.slice(2, 4).toUpperCase()}</span>
@@ -79,7 +70,7 @@ export default function Leaderboard() {
         </div>
       )}
 
-      <button className="refresh-btn" onClick={() => refetch()}>
+      <button className="refresh-btn" onClick={reload}>
         <Refresh size={16} /> 刷新榜单
       </button>
     </div>

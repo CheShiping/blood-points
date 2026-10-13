@@ -225,6 +225,14 @@ export const Shield = (p: IconProps) => (
   </Svg>
 );
 
+export const ExternalLink = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M14 4h6v6" />
+    <path d="M20 4L10 14" />
+    <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
+  </Svg>
+);
+
 export const Wallet = (p: IconProps) => (
   <Svg {...p}>
     <path d="M3 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1" />
@@ -235,6 +243,7 @@ export const Wallet = (p: IconProps) => (
 
 // 商品图标按索引循环
 const PRODUCT_ICONS = [Gift, Tag, Sparkles, Star, Heart, Medal, Package, Shield];
+// eslint-disable-next-line react-refresh/only-export-components
 export const getProductIcon = (index: number) => {
   const C = PRODUCT_ICONS[index % PRODUCT_ICONS.length];
   return <C size={26} />;

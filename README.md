@@ -1,17 +1,22 @@
-# 🩸 BloodPoints（热血链）
+# 🩸 热血链 · 无偿献血公益透明追踪平台（BloodPoints）
 
-基于区块链的献血积分管理系统 —— 让每一滴热血都有迹可循
+> 课程《Web3技术应用》期末项目 —— 选题适配：**参考选题 8「公益捐赠透明追踪平台」**，
+> 迁移至无偿献血公益场景：捐赠者（献血者）的每一次捐赠按**里程碑状态机**分阶段推进，
+> 每个阶段的操作人、机构与 **IPFS 凭证哈希**全部上链公示，捐款（血液）流向全程可查；
+> 捐赠奖励以 **ERC20 积分代币 BPT** 发放，商城兑换时链上销毁。
+
+**教学模拟声明：** 本项目仅用于课程教学演示，只部署 Sepolia 测试网，不涉及任何真实资产、
+真实资金或主网部署；代码中不含真实私钥与助记词。
 
 ## 项目简介
 
-BloodPoints 是一个部署在以太坊 Sepolia 测试网上的去中心化应用（DApp），旨在通过区块链技术实现献血积分的透明管理与血液全流程追踪。
+- **双合约架构**：`BloodPointToken`（ERC20 积分代币，OpenZeppelin）+ `BloodPoints`（公益追踪平台合约）
+- **ERC20 标准**：积分即代币（名称 BloodPointToken，符号 BPT，0 位小数），支持转账、授权、暂停
+- **里程碑状态机**：献血 → 血站接收 → 实验室检测 → 医院分配，每步留存操作人、机构、IPFS 凭证 CID 与时间戳
+- **多角色权限**：基于 OpenZeppelin `AccessControl`，采集记录员 / 血站 / 实验室 / 医院 / 管理员五类角色
+- **ethers.js 前端**：ConnectKit 钱包连接弹窗、网络检测（Sepolia）、链上数据读取、多个写操作与交易状态提示
 
 > 📄 区块链特性详细说明请参阅 [BLOCKCHAIN.md](./BLOCKCHAIN.md)
-
-**核心价值：**
-- 献血者获得链上积分奖励，积分可转赠、可兑换商品
-- 血液从采集到分配的全流程上链，实现不可篡改的溯源追踪
-- 多角色协作（采集员、血站、献血者），权限清晰、各司其职
 
 ## 技术栈
 
@@ -19,66 +24,64 @@ BloodPoints 是一个部署在以太坊 Sepolia 测试网上的去中心化应�
 |------|------|------|
 | 智能合约 | Solidity 0.8.28 | 合约语言 |
 | 开发框架 | Hardhat 3 | 编译、测试、部署 |
-| 合约库 | OpenZeppelin 5.6.1 | Ownable、ReentrancyGuard |
+| 合约库 | OpenZeppelin 5.6.1 | ERC20 / AccessControl / Pausable / ReentrancyGuard |
+| 测试 | Hardhat + Node Test Runner（viem） | 52 个单元测试 |
 | 前端框架 | React 19 + TypeScript | SPA 应用 |
-| 构建工具 | Vite | 前端构建 |
-| 链上交互 | wagmi + viem | React hooks + 以太坊客户端 |
-| 钱包连接 | RainbowKit | 多钱包支持 |
+| 钱包连接 | **ConnectKit**（wagmi + viem） | 钱包选择弹窗、连接/断开、网络切换 |
+| 链上交互 | **ethers.js v6** | 合约读取（JsonRpcProvider）与写操作（Signer） |
 | 目标网络 | Sepolia 测试网 | 以太坊 L1 测试链 |
 
 ## 项目结构
 
 ```
-final-exam/
+blood-points/
 ├── contracts/
-│   └── BloodPoints.sol          # 核心智能合约
+│   ├── BloodPoints.sol           # 平台主合约（AccessControl + 里程碑状态机 + ERC20 集成）
+│   └── BloodPointToken.sol       # ERC20 积分代币（Ownable + Pausable + minter）
 ├── test/
-│   └── BloodPoints.ts           # 合约测试（31 个用例）
+│   ├── BloodPoints.ts            # 平台合约测试（37 个用例）
+│   └── BloodPointToken.ts        # 代币合约测试（15 个用例）
 ├── scripts/
-│   ├── deploy.ts                # 本地部署脚本
-│   ├── deploy-sepolia.ts        # Sepolia 部署脚本
-│   ├── export-abi.ts            # 导出 ABI 到前端
-│   └── assign-roles.ts          # 角色分配脚本
+│   ├── deploy.ts                 # 本地部署（代币 + 平台 + 移交 minter + 示例商品）
+│   ├── deploy-sepolia.ts         # Sepolia 部署脚本
+│   ├── export-abi.ts             # 导出 ABI 到前端（两个合约）
+│   └── assign-roles.ts           # AccessControl 角色分配脚本
 ├── frontend/
 │   └── src/
-│       ├── components/          # React 组件
-│       │   ├── WalletConnect.tsx   # 钱包连接 + 导航
-│       │   ├── DonorPanel.tsx      # 献血人员面板
-│       │   ├── CollectorPanel.tsx  # 采集记录员面板
-│       │   └── BloodBankPanel.tsx  # 血站工作人员面板
-│       ├── config/wagmi.ts      # wagmi 配置
-│       └── contracts/           # 合约 ABI + 地址
-├── hardhat.config.ts            # Hardhat 配置
-├── package.json
+│       ├── components/           # React 组件（WalletConnect / DonorPanel / CollectorPanel / BloodBankPanel / Leaderboard / PointsRing / TxFeedback）
+│       ├── wallet/WalletContext.tsx   # ConnectKit(wagmi) → ethers.js 桥接：账户/链状态 + Signer 派生
+│       ├── hooks/useContract.ts      # 合约读取 Hook 与写操作状态机
+│       ├── config/contracts.ts       # 合约地址 / ABI / 角色哈希 / RPC
+│       ├── config/wagmi.ts           # ConnectKit 底层 wagmi 配置（Sepolia + injected）
+│       └── contracts/                # 合约 ABI JSON（export-abi.ts 生成）
+├── hardhat.config.ts
 └── README.md
 ```
 
-## 多方角色与权限
+## 多方角色与权限（AccessControl）
 
-### 角色一览
+| 角色 | 角色标识 | 职责 | 链上权限 |
+|------|----------|------|----------|
+| **平台管理员** | `DEFAULT_ADMIN_ROLE` | 系统管理 | 角色授权/撤销、上架商品、应急暂停、更换代币地址 |
+| **采集记录员** | `COLLECTOR_ROLE` | 现场采血登记 | `recordBlood`（为献血者发放 100 BPT） |
+| **血站工作人员** | `BLOOD_BANK_ROLE` | 血液入库 | `receiveBlood` |
+| **检测实验室** | `LAB_ROLE` | 质量检测 | `testBlood` |
+| **医院工作人员** | `HOSPITAL_ROLE` | 临床用血 | `assignToPatient` |
+| **献血者** | 普通用户 | 献血 | `donateBlood`（自助献血获 100 BPT）、积分转账（ERC20 `transfer`）、兑换商品 |
 
-| 角色 | 标识 | 职责 | 链上权限 |
-|------|------|------|----------|
-| **管理员 (Owner)** | `onlyOwner` | 系统管理 | 分配/撤销角色、上架商品 |
-| **采集记录员 (Collector)** | `Role.Collector` | 现场采血 | 录入献血记录 (`recordBlood`) |
-| **血站工作人员 (BloodBank)** | `Role.BloodBank` | 血液处理 | 接收、检测、分配血液 |
-| **献血者 (Donor)** | 普通用户 | 献血 | 献血获积分、转赠、兑换 |
-| **病人 (Patient)** | 被动角色 | 接收血液 | 通过地址记录血液来源 |
-
-### 业务流程
+### 业务流程（里程碑状态机）
 
 ```
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│  献血者   │───▶│ 采集记录员 │───▶│ 血站接收  │───▶│ 血液检测  │
-│ donateBlood│   │recordBlood│   │receiveBlood│  │ testBlood │
-└──────────┘    └──────────┘    └──────────┘    └──────────┘
-                                                      │
-                                                      ▼
-                                               ┌──────────┐
-                                               │ 分配病人  │
-                                               │assignToPatient│
-                                               └──────────┘
+┌──────────┐   ┌──────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────┐
+│  献血者   │──▶│ 采集记录员 │──▶│ 血站接收      │──▶│ 实验室检测    │──▶│ 医院分配  │
+│donateBlood│   │recordBlood│   │receiveBlood  │   │testBlood     │   │assignTo… │
+└──────────┘   └──────────┘   └──────────────┘   └──────────────┘   └──────────┘
+   100 BPT        100 BPT         入库凭证 CID        检测报告 CID        用血凭证 CID
+   铸造发放        铸造发放        里程碑上链          里程碑上链          里程碑上链
 ```
+
+每个阶段流转都会写入 `Milestone{stage, operator, location, evidence, timestamp}` 并发出
+`MilestoneRecorded` 事件，前端可通过 `getBloodJourney(bloodId)` 一站式查询完整旅程。
 
 ## 快速开始
 
@@ -86,7 +89,7 @@ final-exam/
 
 - Node.js >= 18
 - MetaMask 浏览器插件
-- Sepolia 测试网 ETH（用于部署和测试）
+- Sepolia 测试网 ETH（部署与演示用，可从水龙头获取）
 
 ### 1. 安装依赖
 
@@ -102,34 +105,30 @@ cd ..
 
 ### 2. 环境配置
 
-在根目录创建 `.env` 文件：
+在根目录创建 `.env` 文件（参考 `.env.example`，**切勿提交到 Git**）：
 
 ```env
 SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
-SEPOLIA_PRIVATE_KEY=你的钱包私钥
+DEPLOYER_PRIVATE_KEY=你的部署钱包私钥
+ETHERSCAN_API_KEY=你的 Etherscan API Key
 ```
 
-### 3. 编译合约
+> 前端只读 RPC 可在 `frontend/.env` 中配置 `VITE_SEPOLIA_RPC_URL`（可选，未配置时使用默认节点）。
+
+### 3. 编译与测试
 
 ```bash
 npx hardhat compile
+npx hardhat test        # 预期：52 个测试全部通过
 ```
 
-### 4. 运行测试
-
-```bash
-npx hardhat test
-```
-
-预期输出：31 个测试全部通过
-
-### 5. 部署合约
+### 4. 部署合约
 
 **本地部署（开发测试）：**
 
 ```bash
-npx hardhat node                              # 启动本地节点
-npx hardhat run scripts/deploy.ts --network localhost
+npx hardhat node                                        # 终端 1：启动本地节点
+npx hardhat run scripts/deploy.ts --network localhost   # 终端 2：部署
 ```
 
 **Sepolia 测试网部署：**
@@ -138,19 +137,32 @@ npx hardhat run scripts/deploy.ts --network localhost
 npx hardhat run scripts/deploy-sepolia.ts --network sepolia
 ```
 
-### 6. 导出 ABI 到前端
+部署脚本会自动完成：部署 `BloodPointToken` → 部署 `BloodPoints` → 将代币 `minter`
+移交给平台合约 → 上架 3 个示例商品，并输出两个合约地址。
+
+### 5. 配置前端
+
+将部署输出的地址填入 `frontend/src/config/contracts.ts`：
+
+```ts
+export const BLOOD_POINTS_ADDRESS = "0x平台合约地址" as const;
+export const BLOOD_POINT_TOKEN_ADDRESS = "0x代币合约地址" as const;
+```
+
+### 6. 导出 ABI 并分配角色
 
 ```bash
 npx hardhat run scripts/export-abi.ts
+
+# 修改 scripts/assign-roles.ts 中的地址后执行：
+npx hardhat run scripts/assign-roles.ts --network sepolia
 ```
 
-### 7. 分配角色
-
-部署后需要为不同地址分配角色：
+### 7. Etherscan 源码验证
 
 ```bash
-# 修改 scripts/assign-roles.ts 中的地址，然后执行：
-npx hardhat run scripts/assign-roles.ts --network sepolia
+npx hardhat verify --network sepolia <BloodPoints地址> <管理员地址> <代币地址>
+npx hardhat verify --network sepolia <代币地址> <管理员地址> <平台合约地址>
 ```
 
 ### 8. 启动前端
@@ -160,160 +172,62 @@ cd frontend
 npm run dev
 ```
 
-访问 http://localhost:5173
-
-### 9. 前端配置
-
-修改 `frontend/src/contracts/config.ts` 中的合约地址为最新部署地址：
-
-```ts
-export const CONTRACT_ADDRESS = "0x你的合约地址" as const;
-```
+访问 http://localhost:5173 ，连接 MetaMask 并切换到 Sepolia 测试网。
 
 ## 合约核心功能
 
-| 功能 | 函数 | 说明 |
+| 功能 | 函数 | 权限 |
 |------|------|------|
-| 献血获积分 | `donateBlood(bloodType, volume)` | 献血者直接调用，获得 100 积分 |
-| 采集记录 | `recordBlood(donor, bloodType, volume)` | 采集员为献血者录入记录 |
-| 接收血液 | `receiveBlood(bloodId, bloodBank)` | 血站接收血液 |
-| 检测血液 | `testBlood(bloodId, passed)` | 血站提交检测结果 |
-| 分配病人 | `assignToPatient(bloodId, patient)` | 将合格血液分配给病人 |
-| 积分转赠 | `transferPoints(to, amount)` | 用户间积分转赠 |
-| 商品兑换 | `redeemProduct(productId)` | 积分兑换商品 |
-| 排行榜 | `getLeaderboard()` | 按积分排序的献血者榜单 |
-| 血液追踪 | `getBloodJourney(bloodId)` | 查询血液完整流转记录 |
+| 自助献血 | `donateBlood(bloodType, volume)` | 任意用户（未暂停） |
+| 采集登记 | `recordBlood(donor, bloodType, volume, evidence)` | COLLECTOR_ROLE |
+| 血站接收 | `receiveBlood(bloodId, bloodBank, evidence)` | BLOOD_BANK_ROLE |
+| 实验室检测 | `testBlood(bloodId, passed, evidence)` | LAB_ROLE |
+| 医院分配 | `assignToPatient(bloodId, patient, evidence)` | HOSPITAL_ROLE |
+| 积分转账 | ERC20 `transfer(to, amount)` | 代币持有者 |
+| 商品兑换 | `redeemProduct(productId)` | 任意用户（CEI + nonReentrant，销毁 BPT） |
+| 应急暂停 | `pause()` / `unpause()` | DEFAULT_ADMIN_ROLE |
+| 排行榜 | `getLeaderboard()` | 只读 |
+| 血液旅程 | `getBloodJourney(bloodId)` / `getMilestones(bloodId)` | 只读 |
 
-## 已部署合约
+## 已部署合约（Sepolia 测试网）
 
-- **网络：** Sepolia 测试网
-- **合约地址：** `0x762a3de172619d3f7879d033966d31081a426aa2`
-- **区块浏览器：** [Etherscan 查看](https://sepolia.etherscan.io/address/0x762a3de172619d3f7879d033966d31081a426aa2)
+| 合约 | 地址 | Etherscan（源码已验证） |
+|------|------|----------|
+| BloodPoints（平台） | `0x915b9e172d2905dc326c83739db040e08916390c` | [查看](https://sepolia.etherscan.io/address/0x915b9e172d2905dc326c83739db040e08916390c) |
+| BloodPointToken（ERC20） | `0x2c837224dd03b36910871c7f32f2dca8d2b0e9c0` | [查看](https://sepolia.etherscan.io/address/0x2c837224dd03b36910871c7f32f2dca8d2b0e9c0) |
 
-## 测试覆盖
+- 部署账户：`0x60780f39004283358d1d82820966f57104b2827f`（平台管理员 DEFAULT_ADMIN_ROLE）
+- 源码验证：Etherscan + Sourcify 双平台已验证通过（`npx hardhat verify`）
+- 代币 minter 已指向平台合约；已上架 3 个示例商品（献血纪念T恤 200 / 爱心礼盒 500 / 免费体检券 1000）
+- 前端 `src/config/contracts.ts` 已配置上述地址，`npm run dev` 即可连接 Sepolia 演示
+- 角色授权：修改 `scripts/assign-roles.ts` 中的地址后运行 `npx hardhat run scripts/assign-roles.ts --network sepolia`（献血者功能无需角色即可使用）
 
-```
-BloodPoints
-  ├── Points System (7 tests)
-  │   ├── 每次献血获得 100 积分
-  │   ├── 多次献血积分累加
-  │   ├── 首次献血进入排行榜
-  │   ├── 重复献血不重复记录
-  │   ├── 积分转赠
-  │   ├── 拒绝转赠给自己
-  │   └── 拒绝积分不足的转赠
-  ├── Blood Tracking (6 tests)
-  │   ├── 献血创建血液单元
-  │   ├── 追踪献血者血液 ID
-  │   ├── 单血站完整流转
-  │   ├── 多血站流转
-  │   ├── 查询血液完整旅程
-  │   └── 追踪病人血液来源
-  ├── State Machine Validation (6 tests)
-  │   ├── 拒绝跳过接收直接检测
-  │   ├── 拒绝跳过检测直接分配
-  │   ├── 拒绝检测不合格后分配
-  │   ├── 拒绝已检测血液重复接收
-  │   ├── 拒绝已分配血液重复接收
-  │   └── 拒绝重复分配
-  ├── Access Control (7 tests)
-  │   ├── 非 BloodBank 拒绝接收
-  │   ├── 非 BloodBank 拒绝检测
-  │   ├── 非 BloodBank 拒绝分配
-  │   ├── 非 Collector 拒绝录入
-  │   ├── BloodBank 完整操作
-  │   ├── Collector 录入操作
-  │   └── Owner 角色管理
-  ├── Collector Functionality (3 tests)
-  └── Blood Query Functions (3 tests)
-```
-
-## 答辩 PPT 预览
-
-PPT 位于 `design-demos/` 目录，浏览器打开 `design-demos/index.html` 即可演示（← → 键翻页，ESC 回概览）。
+## 测试覆盖（52 个用例）
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  🩸 BloodPoints · 热血链                                      │
-│  基于区块链的献血积分管理系统                                      │
-│  ───────────────────────────────────────────                  │
-│  Solidity · Hardhat · React · Sepolia                         │
-└─────────────────────────────────────────────────────────────┘
-  ① 封面
+BloodPoints（37）
+├── Points System (ERC20)  积分铸造、累加、排行榜、兑换销毁
+├── Blood Tracking         血液单元、里程碑（操作人/机构/证据）、事件
+├── State Machine Validation  非法状态跳转、重复分配、不存在 ID、无效输入
+├── Access Control         越权调用（×7）、授权/撤销、hasRole
+├── Pausable (Emergency)   暂停阻断献血/兑换、血液流转不受影响
+├── Product Management     上架、兑换、库存、异常输入
+└── Blood Query Functions  按血型/状态/ID 查询
 
-┌─────────────────────────────────────────────────────────────┐
-│  项目概述                                                     │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐        │
-│  │🔗去中心化 │ │🛡️不可篡改│ │🔍可追溯  │ │🤝多方协作│        │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘        │
-│  BloodPoints 部署在以太坊 Sepolia 测试网，通过区块链技术实现       │
-│  献血积分的透明管理与血液全流程追踪。                             │
-└─────────────────────────────────────────────────────────────┘
-  ② 项目概述
-
-┌─────────────────────────────────────────────────────────────┐
-│  项目分工 · 多方角色设计                                        │
-│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐                         │
-│  │👑  │ │📝  │ │🏥  │ │💉  │ │🛏️  │                         │
-│  │管理│ │采集│ │血站│ │献血│ │病人│                         │
-│  │员  │ │员  │ │人员│ │者  │ │    │                         │
-│  └────┘ └────┘ └────┘ └────┘ └────┘                         │
-│  5 个角色，权限由智能合约 onlyRole 强制执行                       │
-└─────────────────────────────────────────────────────────────┘
-  ③ 项目分工
-
-┌─────────────────────────────────────────────────────────────┐
-│  功能详解 · 智能合约                                           │
-│  ┌─────────────────┐  ┌────────────────────────────────┐    │
-│  │ 核心函数         │  │ 血液状态机                      │    │
-│  │ · donateBlood    │  │                                │    │
-│  │ · recordBlood    │  │ Donated → Received → Tested    │    │
-│  │ · receiveBlood   │  │   已献血    血站接收    已检测   │    │
-│  │ · testBlood      │  │                    ↓           │    │
-│  │ · assignToPatient│  │                Assigned        │    │
-│  │ · transferPoints │  │                 已分配          │    │
-│  └─────────────────┘  └────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-  ④ 功能详解·合约
-
-┌─────────────────────────────────────────────────────────────┐
-│  功能详解 · 前端交互                                           │
-│  ┌───────────┐ ┌───────────┐ ┌───────────┐                  │
-│  │💉献血人员  │ │📝采集记录员│ │🏥血站工作台│                  │
-│  │· 积分查看  │ │· 输入地址  │ │· 血液列表  │                  │
-│  │· 血液追踪  │ │· 选择血型  │ │· 接收血液  │                  │
-│  │· 积分转赠  │ │· 选择血量  │ │· 检测血液  │                  │
-│  │· 商品兑换  │ │· 上传链上  │ │· 分配病人  │                  │
-│  └───────────┘ └───────────┘ └───────────┘                  │
-└─────────────────────────────────────────────────────────────┘
-  ⑤ 功能详解·前端
-
-┌─────────────────────────────────────────────────────────────┐
-│  测试覆盖                                                     │
-│  ┌────┐ ┌────┐ ┌────┐ ┌────┐                                │
-│  │ 31 │ │  6 │ │100%│ │Hard│                                │
-│  │用例│ │分组│ │通过│ │hat │                                │
-│  └────┘ └────┘ └────┘ └────┘                                │
-│  积分系统(7) · 状态机(6) · 血液追踪(6) · 权限控制(7)           │
-└─────────────────────────────────────────────────────────────┘
-  ⑥ 测试覆盖
-
-┌─────────────────────────────────────────────────────────────┐
-│  总结与展望                                                   │
-│  ✅ 完整区块链应用  ✅ 5角色协作  ✅ 状态机驱动                  │
-│  ✅ 31个测试用例    ✅ 角色化前端                               │
-│  ────────────────────────────────────                        │
-│  🔮 未来：Chainlink预言机 / NFT献血证书 / 联盟链扩展            │
-│  📍 已部署: 0x762a3de...aa2 (Sepolia)                         │
-└─────────────────────────────────────────────────────────────┘
-  ⑦ 总结与展望
+BloodPointToken（15）
+├── Metadata               名称/符号/0 位小数/minter
+├── Minting & Burning      平台铸造销毁、非 minter 拒绝（权限/安全）
+├── Pausable               暂停阻断转账、非 owner 拒绝暂停
+└── Minter management      setMinter 权限与零地址校验
 ```
 
-**演示方式：** 浏览器打开 `design-demos/index.html`，支持：
+其中权限、异常、安全场景测试共 20+ 个，满足考试要求（≥8 个用例且 ≥2 个权限/异常/安全场景）。
 
-- **3D 概览墙**：打开即可看到所有页面缩略图
-- **全屏演示**：点击「▶ 开始演示」或任意页面，← → 键翻页
-- **快捷键**：ESC 回概览，P 打印/导出 PDF
+## 已知限制与说明
+
+- **排行榜 gas**：`getLeaderboard()` 使用链上冒泡排序，献血者规模大时 gas 较高，教学规模可接受。
+- **IPFS 上传**：凭证 CID 由使用方在上链前自行上传至 IPFS/Pinata 获得（考试要求中 IPFS 为可选项），合约只负责哈希上链公示。
+- **Sepolia 网络不可达时**：按考试规则可在 Hardhat 本地网络演示，并在项目报告中说明原因。
 
 ## 许可证
 

@@ -33,7 +33,10 @@ export default defineConfig({
       type: "http",
       chainType: "l1",
       url: configVariable("SEPOLIA_RPC_URL"),
-      accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
+      accounts: [configVariable("DEPLOYER_PRIVATE_KEY")],
     },
+  },
+  etherscan: {
+    apiKey: configVariable("ETHERSCAN_API_KEY"),
   },
 });
