@@ -56,4 +56,7 @@
 3. 如需继续打磨：实现 `leaderboard-gas-opt`。
 
 ## 最后更新（Last Updated）
-- 2026-10-13（ConnectKit 钱包连接接入：main.tsx 恢复 WagmiProvider → QueryClientProvider → ConnectKitProvider → WalletProvider 链；WalletContext 改为 wagmi useAccount 取账户/链状态、从连接器 EIP-1193 provider 派生 ethers Signer；WalletConnect 改用 ConnectKitButton + wagmi useSwitchChain 网络切换；合约读写仍全部走 ethers.js。构建/lint 通过，dev server 冒烟 200）
+- 2026-10-27（两轮修复）：
+  1. UX：新增 src/hooks/refreshBus.ts 全局数据变更总线（写操作成功后所有读取自动刷新）；读取失败保留旧数据并自动重试 2 次；默认只读 RPC 回退改 publicnode；献血者面板移除自助献血表单（积分由采集员 recordBlood 登记后自动到账）；兑换积分不足时按钮可点击并提示"还需 X 积分"。
+  2. recordBlood 回退排查：根因为 gasLimit 300000 不足（实际约 1.65M，out-of-gas），TX_GAS_LIMIT 调至 3000000n；采集员随后两笔登记均成功（gas 1.65M / 1.98M）。
+  3. 其他角色交易防呆：诊断确认血站/实验室/医院钱包链上无交易（MetaMask 模拟阶段即被拒，疑为钱包未切换触发 AccessControl）；useContractRead 增加 enabled 参数，BloodBankPanel 三个操作区加「角色 + 状态机」双重守卫（角色不符/状态不符时禁用按钮并显示当前血液状态），CollectorPanel 同步加角色守卫；useTx 增加错误翻译（AccessControl/EnforcedPause/状态机/余额不足/用户取消 → 中文提示）。构建/lint 通过。

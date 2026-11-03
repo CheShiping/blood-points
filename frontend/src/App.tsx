@@ -43,7 +43,7 @@ function App() {
           <button type="button" className="feature-card" onClick={() => setActiveSection('donor')}>
             <div className="feature-icon"><Syringe size={28} /></div>
             <h3>献血人员</h3>
-            <p>献血获取积分、查看血液流转、兑换奖品</p>
+            <p>查看积分与献血记录、转赠积分、兑换奖品</p>
           </button>
           <button type="button" className="feature-card" onClick={() => setActiveSection('collector')}>
             <div className="feature-icon"><Clipboard size={28} /></div>

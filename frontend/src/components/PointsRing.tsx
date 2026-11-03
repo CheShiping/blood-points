@@ -47,7 +47,7 @@ export default function PointsRing() {
           ? toNext > 0
             ? `再获得 ${toNext} 积分解锁下一里程碑`
             : '已达成里程碑目标 🎉'
-          : '连接钱包开始献血，获取积分'}
+          : '连接钱包查看积分（由采集记录员登记献血后自动到账）'}
       </p>
     </div>
   );

@@ -73,7 +73,7 @@ All styles in `src/index.css` (~1200 lines, CSS custom properties, animations). 
 This project uses **Hardhat 3** (`defineConfig` API, not legacy `module.exports`). The `hardhat-toolbox-viem` plugin provides viem-based test helpers. Solidity tests use `forge-std` (none currently). Two config profiles: `default` (no optimizer) and `production` (optimizer, 200 runs).
 
 ## Sepolia Deployment Gotchas
-- All frontend write calls need explicit `gasLimit: 300000n` — Sepolia rejects default estimated gas limits.
+- All frontend write calls pass explicit `gasLimit: 3000000n` (`TX_GAS_LIMIT`) — `recordBlood` needs ~1.6M gas (ERC20 mint + milestone strings); the old 300000 value caused out-of-gas reverts on the new contract.
 - Behind a proxy? Set `HTTP_PROXY`/`HTTPS_PROXY` env vars before deploying: `$env:HTTPS_PROXY="http://127.0.0.1:7890"`.
 - `.env` uses `SEPOLIA_RPC_URL` + `DEPLOYER_PRIVATE_KEY` + `ETHERSCAN_API_KEY` (matches `.env.example`).
 - After redeploying, update `frontend/src/config/contracts.ts` with BOTH new addresses (platform + token) AND run `export-abi.ts`.

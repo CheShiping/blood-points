@@ -8,13 +8,10 @@ import {
   getTokenContract,
 } from '../hooks/useContract';
 import {
-  Drop, Gem, Heart, User, ShoppingBag, Package,
+  Drop, Gem, Heart, User, ShoppingBag, Package, Alert,
   Syringe, Hospital, Gift, getProductIcon as productIcon,
 } from './icons';
 import TxFeedback from './TxFeedback';
-
-const BLOOD_TYPES = ['A', 'B', 'AB', 'O'] as const;
-const VOLUMES = [200, 300, 400] as const;
 
 const STATUS_LABELS: Record<number, { text: string; className: string }> = {
   0: { text: '已献血', className: 'status-donated' },
@@ -59,88 +56,6 @@ const shortEvidence = (cid: string) => {
   return cid.length > 18 ? `${cid.slice(0, 10)}…${cid.slice(-6)}` : cid;
 };
 
-// ==================== 献血获取积分 ====================
-
-function DonateSection() {
-  const { isConnected } = useWallet();
-  const { status, hash, error, run } = useTx();
-  const [bloodType, setBloodType] = useState<string>('A');
-  const [volume, setVolume] = useState<number>(300);
-
-  const busy = status === 'signing' || status === 'confirming';
-
-  const handleDonate = () => {
-    run(async (signer) => {
-      const contract = getBloodPointsContract(signer);
-      return contract.donateBlood(bloodType, BigInt(volume), { gasLimit: TX_GAS_LIMIT });
-    });
-  };
-
-  return (
-    <div className="blood-donation-card">
-      <div className="card-header">
-        <div className="card-icon"><Drop size={22} /></div>
-        <h2 className="card-title">献血获取积分</h2>
-      </div>
-
-      <div className="card-content">
-        <p className="section-desc">每次献血可获得 100 BPT 积分（ERC20 代币），并创建血液追踪记录</p>
-
-        <div className="donation-form">
-          <div className="form-row">
-            <label className="form-label">血型</label>
-            <div className="blood-type-selector">
-              {BLOOD_TYPES.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  className={`type-btn ${bloodType === type ? 'active' : ''}`}
-                  onClick={() => setBloodType(type)}
-                  disabled={busy}
-                >
-                  {type}型
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <label className="form-label">献血量 (ml)</label>
-            <div className="volume-selector">
-              {VOLUMES.map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  className={`volume-btn ${volume === v ? 'active' : ''}`}
-                  onClick={() => setVolume(v)}
-                  disabled={busy}
-                >
-                  {v}ml
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <button className="donate-btn" onClick={handleDonate} disabled={!isConnected || busy}>
-          {busy ? (
-            <><span className="btn-spinner"></span>处理中…</>
-          ) : (
-            <><span className="btn-icon"><Heart size={16} /></span>献血获取 100 积分</>
-          )}
-        </button>
-
-        <TxFeedback
-          status={status}
-          hash={hash}
-          error={error}
-          successMessage="献血成功！已获得 100 积分，血液记录已上链"
-        />
-      </div>
-    </div>
-  );
-}
-
 // ==================== 血液时间线组件 ====================
 
 function BloodTimeline({ bloodId }: { bloodId: bigint }) {
@@ -162,14 +77,15 @@ function BloodTimeline({ bloodId }: { bloodId: bigint }) {
       <div className="timeline-nodes">
         {milestones.map((m, i) => {
           const isCurrent = i === milestones.length - 1 && unit.status < 3;
+          const stage = Number(m.stage);
           return (
             <div key={i} className={`timeline-node ${isCurrent ? 'current' : 'active'}`}>
               {i > 0 && <div className="node-connector">→</div>}
               <div className="node-icon">
-                {m.stage === 0 && <Syringe size={20} />}
-                {m.stage === 1 && <Hospital size={20} />}
-                {m.stage === 2 && <Syringe size={20} />}
-                {m.stage === 3 && <Hospital size={20} />}
+                {stage === 0 && <Syringe size={20} />}
+                {stage === 1 && <Hospital size={20} />}
+                {stage === 2 && <Syringe size={20} />}
+                {stage === 3 && <Hospital size={20} />}
               </div>
               <div className="node-content">
                 <div className="node-label">{STATUS_LABELS[m.stage]?.text ?? '未知'} · {m.location}</div>
@@ -181,7 +97,7 @@ function BloodTimeline({ bloodId }: { bloodId: bigint }) {
           );
         })}
 
-        {unit.status === 3 && (
+        {Number(unit.status) === 3 && (
           <div className="timeline-node active">
             <div className="node-connector">→</div>
             <div className="node-icon"><Hospital size={20} /></div>
@@ -316,7 +232,7 @@ function ProductCard({ productId, isConnected, busy, userPoints, onRedeem, getPr
   isConnected: boolean;
   busy: boolean;
   userPoints: bigint | undefined;
-  onRedeem: (id: bigint) => void;
+  onRedeem: (id: bigint, price: bigint) => void;
   getProductIcon: (index: number) => ReactNode;
 }) {
   const { data: product } = useContractRead<[bigint, string, bigint, bigint]>(
@@ -351,8 +267,8 @@ function ProductCard({ productId, isConnected, busy, userPoints, onRedeem, getPr
       </div>
       <button
         className="redeem-btn"
-        onClick={() => onRedeem(id)}
-        disabled={!isConnected || busy || stock === 0n || (!!userPoints && userPoints < price)}
+        onClick={() => onRedeem(id, price)}
+        disabled={!isConnected || busy || stock === 0n}
       >
         {busy ? (
           <><span className="btn-spinner"></span>兑换中…</>
@@ -371,28 +287,31 @@ function ProductCard({ productId, isConnected, busy, userPoints, onRedeem, getPr
 function ProductSection() {
   const { address, isConnected } = useWallet();
   const { status, hash, error, run } = useTx();
+  const [hint, setHint] = useState<string | null>(null);
 
-  const { data: nextProductId, reload: reloadProducts } = useContractRead<bigint>(
+  // 商品与积分数据由全局事件总线自动刷新（任意写操作成功后）
+  const { data: nextProductId } = useContractRead<bigint>(
     (contract) => contract.nextProductId(),
     []
   );
 
-  const { data: userPoints, reload: reloadPoints } = useContractRead<bigint>(
+  const { data: userPoints } = useContractRead<bigint>(
     (contract) => contract.getPoints(address!),
     [address]
   );
 
-  const handleRedeem = (productId: bigint) => {
+  const handleRedeem = (productId: bigint, price: bigint) => {
+    // 积分不足时给出明确提示，而不是把按钮变灰
+    if (userPoints != null && userPoints < price) {
+      setHint(`积分不足：兑换该商品还需 ${price - userPoints} 积分，可请采集记录员登记献血获得`);
+      return;
+    }
+    setHint(null);
     run(async (signer) => {
       const contract = getBloodPointsContract(signer);
       return contract.redeemProduct(productId, { gasLimit: TX_GAS_LIMIT });
     });
   };
-
-  if (status === 'success') {
-    reloadProducts();
-    reloadPoints();
-  }
 
   const getIcon = (index: number) => productIcon(index);
   const busy = status === 'signing' || status === 'confirming';
@@ -430,6 +349,13 @@ function ProductSection() {
         </div>
       )}
 
+      {hint && (
+        <div className="error" role="alert">
+          <span className="error-icon"><Alert size={16} /></span>
+          {hint}
+        </div>
+      )}
+
       <TxFeedback status={status} hash={hash} error={error} successMessage="兑换成功！积分已销毁" />
     </div>
   );
@@ -459,7 +385,7 @@ function BloodRecords() {
           <div className="empty-state">
             <div className="empty-icon"><Drop size={40} /></div>
             <p>暂无献血记录</p>
-            <p className="empty-hint">完成一次献血后，血液流转记录将显示在这里</p>
+            <p className="empty-hint">采集记录员登记献血后，积分与血液记录将自动显示在这里</p>
           </div>
         ) : (
           ids.map((id) => <BloodCard key={id.toString()} bloodId={id} />)
@@ -474,7 +400,7 @@ function BloodRecords() {
 export default function DonorPanel() {
   return (
     <div className="donor-panel">
-      <DonateSection />
+      <p className="section-desc">积分（BPT）由采集记录员登记献血后自动到账，血液流转全程可查</p>
 
       <BloodRecords />
 

@@ -10,11 +10,12 @@ export const ETHERSCAN_TX_URL = "https://sepolia.etherscan.io/tx/";
 
 /**
  * 只读 RPC 节点：优先读取环境变量 VITE_SEPOLIA_RPC_URL（frontend/.env），
- * 未配置时回退到默认节点。未连接钱包时也可通过该节点读取链上数据。
+ * 未配置时回退到默认节点（publicnode 公共节点，较免费 Key 更稳定）。
+ * 未连接钱包时也可通过该节点读取链上数据。
  */
 export const SEPOLIA_RPC_URL: string =
   import.meta.env.VITE_SEPOLIA_RPC_URL ||
-  "https://eth-sepolia.g.alchemy.com/v2/4Pr9_aeDWxyZeNu0Ytcfh";
+  "https://ethereum-sepolia-rpc.publicnode.com";
 
 /**
  * Sepolia 测试网已部署地址（2026-10-13，deploy-sepolia.ts + 收尾脚本部署）
@@ -43,5 +44,9 @@ export const ROLES = {
   HOSPITAL: id("HOSPITAL_ROLE"),
 } as const;
 
-/** 前端写操作统一 gas limit（Sepolia 不接受默认估算值，见 AGENTS.md） */
-export const TX_GAS_LIMIT = 300000n;
+/**
+ * 前端写操作统一 gas 上限：
+ * recordBlood 等函数需铸造 ERC20 并写入血液单元/里程碑字符串，实测约 1.6M gas，
+ * 旧值 300000 会 out-of-gas 回退。未用完的 gas 不扣费，仅 revert 时按实际消耗收取。
+ */
+export const TX_GAS_LIMIT = 3000000n;

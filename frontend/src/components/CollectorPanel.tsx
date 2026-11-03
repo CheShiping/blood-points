@@ -129,7 +129,7 @@ export default function CollectorPanel() {
         <button
           className="donate-btn"
           onClick={handleRecord}
-          disabled={!isConnected || busy || !donorAddr}
+          disabled={!isConnected || busy || !donorAddr || hasRole === false}
         >
           {busy ? (
             <><span className="btn-spinner"></span>上传中…</>

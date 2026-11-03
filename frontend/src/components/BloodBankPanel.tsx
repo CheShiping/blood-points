@@ -34,18 +34,37 @@ const shortAddr = (addr: string) => {
   return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 };
 
-/** 角色校验提示：连接钱包但缺少指定角色时显示警告 */
-function RoleNotice({ role }: { role: string }) {
+/** 查询当前钱包是否拥有指定角色 */
+function useHasRole(role: string): boolean | null {
   const { address, isConnected } = useWallet();
   const { data: hasRole } = useContractRead<boolean>(
     (contract) => contract.hasRole(role, address!),
-    [address]
+    [address],
+    isConnected
   );
+  return hasRole ?? null;
+}
+
+/** 角色校验提示：连接钱包但缺少指定角色时显示警告 */
+function RoleNotice({ role }: { role: string }) {
+  const { isConnected } = useWallet();
+  const hasRole = useHasRole(role);
 
   if (!isConnected || hasRole !== false) return null;
   return (
     <div className="role-warning" role="alert">
-      <Alert size={16} /> 当前钱包没有该角色权限，请联系管理员授权（scripts/assign-roles.ts）
+      <Alert size={16} /> 当前钱包没有该角色权限，请切换到对应角色的钱包（授权脚本见 scripts/assign-roles.ts）
+    </div>
+  );
+}
+
+/** 状态机预检提示：所选血液状态不满足当前操作要求时显示 */
+function StateNotice({ blocked, hint }: { blocked: boolean; hint: string }) {
+  if (!hint) return null;
+  return (
+    <div className={blocked ? 'role-warning' : 'section-desc'} role={blocked ? 'alert' : undefined}>
+      {blocked && <Alert size={16} />} {hint}
+      {blocked && ' —— 请先完成前置流程或选择其他血液'}
     </div>
   );
 }
@@ -92,7 +111,7 @@ function BloodListItem({ bloodId, onSelect }: { bloodId: bigint; onSelect: (id: 
 
   if (!unit) return null;
 
-  const statusInfo = STATUS_LABELS[unit.status] || { text: '未知', className: '' };
+  const statusInfo = STATUS_LABELS[Number(unit.status)] || { text: '未知', className: '' };
 
   return (
     <button type="button" className="blood-card clickable" onClick={() => onSelect(bloodId.toString())}>
@@ -107,7 +126,7 @@ function BloodListItem({ bloodId, onSelect }: { bloodId: bigint; onSelect: (id: 
           {statusInfo.text}
         </span>
       </div>
-      {unit.status === 2 && !unit.testedPassed && (
+      {Number(unit.status) === 2 && !unit.testedPassed && (
         <div className="blood-card-warning"><Alert size={16} /> 检测不合格，不可分配</div>
       )}
     </button>
@@ -116,34 +135,41 @@ function BloodListItem({ bloodId, onSelect }: { bloodId: bigint; onSelect: (id: 
 
 // ==================== 接收血液（BLOOD_BANK_ROLE） ====================
 
-function ReceiveSection({ selectedBloodId, onClear }: { selectedBloodId: string; onClear: () => void }) {
+function ReceiveSection({ bloodId, onBloodIdChange, onClear }: {
+  bloodId: string;
+  onBloodIdChange: (id: string) => void;
+  onClear: () => void;
+}) {
   const { isConnected } = useWallet();
   const { status, hash, error, run } = useTx();
 
-  const [bloodId, setBloodId] = useState(selectedBloodId);
   const [bankName, setBankName] = useState('');
   const [evidence, setEvidence] = useState('');
 
-  if (selectedBloodId && selectedBloodId !== bloodId && status !== 'signing' && status !== 'confirming') {
-    setBloodId(selectedBloodId);
-  }
-
   const busy = status === 'signing' || status === 'confirming';
 
-  const handleReceive = () => {
+  // 守卫：角色 + 状态机预检（血液必须处于「已献血」状态才能接收）
+  const hasRole = useHasRole(ROLES.BLOOD_BANK);
+  const unitId = /^\d+$/.test(bloodId) ? BigInt(bloodId) : null;
+  const { data: unit } = useContractRead<BloodUnitData>(
+    (contract) => contract.getBloodUnit(unitId!),
+    [unitId],
+    unitId !== null
+  );
+  const stateBlocked = unitId !== null && unit !== null && Number(unit.status) !== 0;
+
+  const handleReceive = async () => {
     if (!bloodId || !bankName) return;
-    run(async (signer) => {
+    const ok = await run(async (signer) => {
       const contract = getBloodPointsContract(signer);
       return contract.receiveBlood(BigInt(bloodId), bankName, evidence, { gasLimit: TX_GAS_LIMIT });
     });
+    if (ok) {
+      setBankName('');
+      setEvidence('');
+      onClear();
+    }
   };
-
-  if (status === 'success') {
-    setBloodId('');
-    setBankName('');
-    setEvidence('');
-    onClear();
-  }
 
   return (
     <div className="bloodbank-section">
@@ -161,7 +187,7 @@ function ReceiveSection({ selectedBloodId, onClear }: { selectedBloodId: string;
             name="bloodId"
             placeholder="点击上方列表选择，或手动输入"
             value={bloodId}
-            onChange={(e) => setBloodId(e.target.value)}
+            onChange={(e) => onBloodIdChange(e.target.value)}
             disabled={!isConnected || busy}
             min="0"
             autoComplete="off"
@@ -199,7 +225,18 @@ function ReceiveSection({ selectedBloodId, onClear }: { selectedBloodId: string;
         </div>
       </div>
 
-      <button className="donate-btn" onClick={handleReceive} disabled={!isConnected || busy || !bloodId || !bankName}>
+      {unit && (
+        <StateNotice
+          blocked={stateBlocked}
+          hint={`血液 #${unit.bloodId.toString()} 当前状态：${STATUS_LABELS[Number(unit.status)]?.text ?? '未知'}`}
+        />
+      )}
+
+      <button
+        className="donate-btn"
+        onClick={handleReceive}
+        disabled={!isConnected || busy || !bloodId || !bankName || hasRole === false || stateBlocked}
+      >
         {busy ? (
           <><span className="btn-spinner"></span>处理中…</>
         ) : (
@@ -214,33 +251,40 @@ function ReceiveSection({ selectedBloodId, onClear }: { selectedBloodId: string;
 
 // ==================== 检测血液（LAB_ROLE） ====================
 
-function TestSection({ selectedBloodId, onClear }: { selectedBloodId: string; onClear: () => void }) {
+function TestSection({ bloodId, onBloodIdChange, onClear }: {
+  bloodId: string;
+  onBloodIdChange: (id: string) => void;
+  onClear: () => void;
+}) {
   const { isConnected } = useWallet();
   const { status, hash, error, run } = useTx();
 
-  const [bloodId, setBloodId] = useState(selectedBloodId);
   const [passed, setPassed] = useState(true);
   const [evidence, setEvidence] = useState('');
 
-  if (selectedBloodId && selectedBloodId !== bloodId && status !== 'signing' && status !== 'confirming') {
-    setBloodId(selectedBloodId);
-  }
-
   const busy = status === 'signing' || status === 'confirming';
 
-  const handleTest = () => {
+  // 守卫：角色 + 状态机预检（血液必须处于「血站接收中」状态才能检测）
+  const hasRole = useHasRole(ROLES.LAB);
+  const unitId = /^\d+$/.test(bloodId) ? BigInt(bloodId) : null;
+  const { data: unit } = useContractRead<BloodUnitData>(
+    (contract) => contract.getBloodUnit(unitId!),
+    [unitId],
+    unitId !== null
+  );
+  const stateBlocked = unitId !== null && unit !== null && Number(unit.status) !== 1;
+
+  const handleTest = async () => {
     if (!bloodId) return;
-    run(async (signer) => {
+    const ok = await run(async (signer) => {
       const contract = getBloodPointsContract(signer);
       return contract.testBlood(BigInt(bloodId), passed, evidence, { gasLimit: TX_GAS_LIMIT });
     });
+    if (ok) {
+      setEvidence('');
+      onClear();
+    }
   };
-
-  if (status === 'success') {
-    setBloodId('');
-    setEvidence('');
-    onClear();
-  }
 
   return (
     <div className="bloodbank-section">
@@ -258,7 +302,7 @@ function TestSection({ selectedBloodId, onClear }: { selectedBloodId: string; on
             name="bloodId"
             placeholder="点击上方列表选择，或手动输入"
             value={bloodId}
-            onChange={(e) => setBloodId(e.target.value)}
+            onChange={(e) => onBloodIdChange(e.target.value)}
             disabled={!isConnected || busy}
             min="0"
             autoComplete="off"
@@ -303,7 +347,18 @@ function TestSection({ selectedBloodId, onClear }: { selectedBloodId: string; on
         </div>
       </div>
 
-      <button className="donate-btn" onClick={handleTest} disabled={!isConnected || busy || !bloodId}>
+      {unit && (
+        <StateNotice
+          blocked={stateBlocked}
+          hint={`血液 #${unit.bloodId.toString()} 当前状态：${STATUS_LABELS[Number(unit.status)]?.text ?? '未知'}`}
+        />
+      )}
+
+      <button
+        className="donate-btn"
+        onClick={handleTest}
+        disabled={!isConnected || busy || !bloodId || hasRole === false || stateBlocked}
+      >
         {busy ? (
           <><span className="btn-spinner"></span>处理中…</>
         ) : (
@@ -318,34 +373,47 @@ function TestSection({ selectedBloodId, onClear }: { selectedBloodId: string; on
 
 // ==================== 分配血液（HOSPITAL_ROLE） ====================
 
-function AssignSection({ selectedBloodId, onClear }: { selectedBloodId: string; onClear: () => void }) {
+function AssignSection({ bloodId, onBloodIdChange, onClear }: {
+  bloodId: string;
+  onBloodIdChange: (id: string) => void;
+  onClear: () => void;
+}) {
   const { isConnected } = useWallet();
   const { status, hash, error, run } = useTx();
 
-  const [bloodId, setBloodId] = useState(selectedBloodId);
   const [patientAddr, setPatientAddr] = useState('');
   const [evidence, setEvidence] = useState('');
 
-  if (selectedBloodId && selectedBloodId !== bloodId && status !== 'signing' && status !== 'confirming') {
-    setBloodId(selectedBloodId);
-  }
-
   const busy = status === 'signing' || status === 'confirming';
 
-  const handleAssign = () => {
+  // 守卫：角色 + 状态机预检（血液必须「已检测且合格」才能分配）
+  const hasRole = useHasRole(ROLES.HOSPITAL);
+  const unitId = /^\d+$/.test(bloodId) ? BigInt(bloodId) : null;
+  const { data: unit } = useContractRead<BloodUnitData>(
+    (contract) => contract.getBloodUnit(unitId!),
+    [unitId],
+    unitId !== null
+  );
+  const stateBlocked =
+    unitId !== null && unit !== null && (Number(unit.status) !== 2 || !unit.testedPassed);
+  const assignHint = unit
+    ? Number(unit.status) === 2 && !unit.testedPassed
+      ? `血液 #${unit.bloodId.toString()} 检测不合格，不可分配`
+      : `血液 #${unit.bloodId.toString()} 当前状态：${STATUS_LABELS[Number(unit.status)]?.text ?? '未知'}`
+    : '';
+
+  const handleAssign = async () => {
     if (!bloodId || !patientAddr) return;
-    run(async (signer) => {
+    const ok = await run(async (signer) => {
       const contract = getBloodPointsContract(signer);
       return contract.assignToPatient(BigInt(bloodId), patientAddr, evidence, { gasLimit: TX_GAS_LIMIT });
     });
+    if (ok) {
+      setPatientAddr('');
+      setEvidence('');
+      onClear();
+    }
   };
-
-  if (status === 'success') {
-    setBloodId('');
-    setPatientAddr('');
-    setEvidence('');
-    onClear();
-  }
 
   return (
     <div className="bloodbank-section">
@@ -363,7 +431,7 @@ function AssignSection({ selectedBloodId, onClear }: { selectedBloodId: string; 
             name="bloodId"
             placeholder="点击上方列表选择，或手动输入"
             value={bloodId}
-            onChange={(e) => setBloodId(e.target.value)}
+            onChange={(e) => onBloodIdChange(e.target.value)}
             disabled={!isConnected || busy}
             min="0"
             autoComplete="off"
@@ -402,7 +470,13 @@ function AssignSection({ selectedBloodId, onClear }: { selectedBloodId: string; 
         </div>
       </div>
 
-      <button className="donate-btn" onClick={handleAssign} disabled={!isConnected || busy || !bloodId || !patientAddr}>
+      {unit && <StateNotice blocked={stateBlocked} hint={assignHint} />}
+
+      <button
+        className="donate-btn"
+        onClick={handleAssign}
+        disabled={!isConnected || busy || !bloodId || !patientAddr || hasRole === false || stateBlocked}
+      >
         {busy ? (
           <><span className="btn-spinner"></span>处理中…</>
         ) : (
@@ -491,7 +565,7 @@ function BloodQueryCard({ bloodId }: { bloodId: bigint }) {
 
   if (!unit) return null;
 
-  const statusInfo = STATUS_LABELS[unit.status] || { text: '未知', className: '' };
+  const statusInfo = STATUS_LABELS[Number(unit.status)] || { text: '未知', className: '' };
 
   return (
     <div className="blood-card">
@@ -512,6 +586,7 @@ function BloodQueryCard({ bloodId }: { bloodId: bigint }) {
 // ==================== 血站工作台主面板 ====================
 
 export default function BloodBankPanel() {
+  // 三个操作区共享同一份选中的血液 ID
   const [selectedBloodId, setSelectedBloodId] = useState('');
 
   const handleSelectBlood = useCallback((id: string) => {
@@ -546,15 +621,15 @@ export default function BloodBankPanel() {
       {/* 操作区 */}
       <div className="bloodbank-grid">
         <section className="bloodbank-card">
-          <ReceiveSection selectedBloodId={selectedBloodId} onClear={clearSelected} />
+          <ReceiveSection bloodId={selectedBloodId} onBloodIdChange={setSelectedBloodId} onClear={clearSelected} />
         </section>
 
         <section className="bloodbank-card">
-          <TestSection selectedBloodId={selectedBloodId} onClear={clearSelected} />
+          <TestSection bloodId={selectedBloodId} onBloodIdChange={setSelectedBloodId} onClear={clearSelected} />
         </section>
 
         <section className="bloodbank-card">
-          <AssignSection selectedBloodId={selectedBloodId} onClear={clearSelected} />
+          <AssignSection bloodId={selectedBloodId} onBloodIdChange={setSelectedBloodId} onClear={clearSelected} />
         </section>
 
         <section className="bloodbank-card">
